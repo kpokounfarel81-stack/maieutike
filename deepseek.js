@@ -36,6 +36,16 @@ class DeepSeekAPI {
     }
 
     async solveProblemStream(problemStatement, onReasoning, onSolution, options = {}) {
+        // Sécurisation du chargement : Vérification immédiate de la clé
+        const apiKey = (window.__ENV__?.DEEPSEEK_API_KEY || "").trim();
+        const isDirectCall = this.endpoint.includes('deepseek.com') || this.endpoint.includes('openrouter.ai');
+
+        if (isDirectCall && !apiKey) {
+            const errorMsg = 'Erreur : Clé OpenRouter manquante dans env.js';
+            console.error(errorMsg);
+            throw new Error(errorMsg);
+        }
+
         const requestPayload = {
             problemStatement: problemStatement || '',
             mode: options.mode || 'solve',
@@ -51,20 +61,17 @@ class DeepSeekAPI {
             return cached;
         }
 
-        const isDirectCall = this.endpoint.includes('deepseek.com') || this.endpoint.includes('openrouter.ai');
         const headers = { 
             'Content-Type': 'application/json'
         };
         
         // Si appel direct (GitHub Pages), on injecte la clé depuis l'env
         if (isDirectCall) {
-            const apiKey = (window.__ENV__?.DEEPSEEK_API_KEY || "").trim();
-            if (!apiKey) throw new Error("Clé API IA manquante pour l'appel direct sur GitHub Pages.");
             headers['Authorization'] = `Bearer ${apiKey}`;
             
             // En-têtes requis par OpenRouter pour le déploiement navigateur
             if (this.endpoint.includes('openrouter.ai')) {
-                headers['HTTP-Referer'] = window.location.origin;
+                headers['HTTP-Referer'] = window.location.href;
                 headers['X-Title'] = window.__ENV__?.APP_NAME || 'Maieutik';
             }
         }
