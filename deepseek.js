@@ -140,18 +140,14 @@ class DeepSeekAPI {
                         solution += delta;
                         if (onSolution) onSolution(solution, false);
                     }
-                } 
+                }
                 // Gestion des flux standards OpenAI / OpenRouter (GitHub Pages direct)
                 else if (parsed.event === 'message' && parsed.data?.choices?.[0]?.delta) {
                     const delta = parsed.data.choices[0].delta;
-                    
-                    // Détection du raisonnement (DeepSeek R1 / OpenRouter)
                     if (delta.reasoning_content) {
                         reasoning += delta.reasoning_content;
                         if (onReasoning) onReasoning(reasoning, false);
                     }
-                    
-                    // Détection du contenu
                     if (delta.content) {
                         solution += delta.content;
                         if (onSolution) onSolution(solution, false);
@@ -197,7 +193,7 @@ class DeepSeekAPI {
             }
         }
 
-        // Si pas d'événement spécifié (flux direct OpenRouter), on utilise 'message' par défaut
+        // Par défaut pour OpenRouter
         if (!event && dataLines.length > 0) event = 'message';
 
         if (!event || dataLines.length === 0) return null;

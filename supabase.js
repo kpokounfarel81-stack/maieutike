@@ -143,7 +143,7 @@ class SupabaseClient {
                 return data.user;
             }
 
-            // Crée profil (RLS attend user_id = auth.uid())
+            // Crée profil (RLS attend id = auth.uid() selon SETUP.md)
             await this.createUserProfile(this.user.id, normalizedEmail, fullName).catch(() => {});
 
             // expose compat
@@ -199,7 +199,7 @@ class SupabaseClient {
         this.authToken = null;
 
         // router est global dans main.js
-        if (window.router) window.router.navigate('home');
+        router.navigate('home');
     }
 
     // Récupérer l’access token actuel
@@ -209,13 +209,14 @@ class SupabaseClient {
 
     async createUserProfile(userId, email, fullName) {
         const { error } = await this.supabase.from('profiles').insert({
-            id: userId, // Correspond au PRIMARY KEY id UUID dans SETUP.md
+            id: userId,
             email,
             full_name: fullName
         });
 
         // non-bloquant (profil peut déjà exister)
         if (error) {
+            // eslint-disable-next-line no-console
             console.warn('Create profile (maybe exists):', error.message || error);
         }
     }
