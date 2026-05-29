@@ -199,7 +199,7 @@ class SupabaseClient {
         this.authToken = null;
 
         // router est global dans main.js
-        router.navigate('home');
+        if (window.router) window.router.navigate('home');
     }
 
     // Récupérer l’access token actuel

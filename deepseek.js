@@ -52,13 +52,21 @@ class DeepSeekAPI {
         }
 
         const isDirectCall = this.endpoint.includes('deepseek.com') || this.endpoint.includes('openrouter.ai');
-        const headers = { 'Content-Type': 'application/json' };
+        const headers = { 
+            'Content-Type': 'application/json'
+        };
         
         // Si appel direct (GitHub Pages), on injecte la clé depuis l'env
         if (isDirectCall) {
             const apiKey = window.__ENV__?.DEEPSEEK_API_KEY;
             if (!apiKey) throw new Error("Clé API IA manquante pour l'appel direct sur GitHub Pages.");
             headers['Authorization'] = `Bearer ${apiKey}`;
+            
+            // En-têtes requis par OpenRouter pour le déploiement navigateur
+            if (this.endpoint.includes('openrouter.ai')) {
+                headers['HTTP-Referer'] = window.location.origin;
+                headers['X-Title'] = window.__ENV__?.APP_NAME || 'Maieutik';
+            }
         }
 
         const body = isDirectCall 
