@@ -38,13 +38,13 @@ class DeepSeekAPI {
     async solveProblemStream(problemStatement, onReasoning, onSolution, options = {}) {
         // Sécurisation du chargement : Vérification immédiate de la clé
         const apiKey = (window.__ENV__?.DEEPSEEK_API_KEY || "").trim();
-        const isDirectCall = this.endpoint.includes('deepseek.com') || this.endpoint.includes('openrouter.ai');
-
-        if (isDirectCall && !apiKey) {
-            const errorMsg = 'Erreur : Clé OpenRouter manquante dans env.js';
+        if (!apiKey) {
+            const errorMsg = 'Erreur : Clé OpenRouter manquante dans env.js. Veuillez la configurer.';
             console.error(errorMsg);
             throw new Error(errorMsg);
         }
+
+        const isDirectCall = this.endpoint.includes('deepseek.com') || this.endpoint.includes('openrouter.ai');
 
         const requestPayload = {
             problemStatement: problemStatement || '',
@@ -99,23 +99,6 @@ class DeepSeekAPI {
         const result = await this.readEventStream(response, onReasoning, onSolution);
         this.setCachedResult(cacheKey, result);
         return result;
-    }
-
-    buildDirectPayload(payload) {
-        return {
-            model: window.__ENV__?.DEEPSEEK_MODEL || "deepseek-reasoner",
-            messages: [
-                { 
-                    role: "system", 
-                    content: "Tu es un tuteur expert en maïeutique. Aide l'étudiant à comprendre par lui-même." 
-                },
-                { 
-                    role: "user", 
-                    content: payload.attempt ? `Problème: ${payload.problemStatement}\nTentative: ${payload.attempt}` : payload.problemStatement 
-                }
-            ],
-            stream: true
-        };
     }
 
     /**
@@ -191,6 +174,23 @@ class DeepSeekAPI {
         return {
             reasoning: reasoning || 'Demarche integree dans la reponse.',
             solution: solution || 'Solution indisponible'
+        };
+    }
+
+    buildDirectPayload(payload) {
+        return {
+            model: window.__ENV__?.DEEPSEEK_MODEL || "google/gemma-2-9b-it:free",
+            messages: [
+                { 
+                    role: "system", 
+                    content: "Tu es un tuteur expert en maïeutique. Aide l'étudiant à comprendre par lui-même." 
+                },
+                { 
+                    role: "user", 
+                    content: payload.attempt ? `Problème: ${payload.problemStatement}\nTentative: ${payload.attempt}` : payload.problemStatement 
+                }
+            ],
+            stream: true
         };
     }
 
