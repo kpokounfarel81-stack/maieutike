@@ -1,15 +1,9 @@
 /**
- * Client IA Maieutik - Migration vers Google Gemini SDK
+ * Client IA Maieutik - Migration vers Google Gemini REST API (Direct)
  */
-
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 class DeepSeekAPI {
     constructor() {
-        const apiKey = window.__ENV__?.GEMINI_API_KEY;
-        if (apiKey) {
-            this.genAI = new GoogleGenerativeAI(apiKey);
-        }
         this.cachePrefix = 'maieutik_ai_cache_';
     }
 
@@ -27,8 +21,13 @@ class DeepSeekAPI {
     }
 
     async solveProblemStream(problemStatement, onReasoning, onSolution, options = {}) {
-        if (!this.genAI) {
-            throw new Error("Clé GEMINI_API_KEY manquante dans env.js");
+        const apiKey = (window.__ENV__?.GEMINI_API_KEY || "").trim();
+        const modelName = window.__ENV__?.GEMINI_MODEL || "gemini-1.5-flash";
+
+        if (!apiKey) {
+            const errorMsg = "Erreur : Clé GEMINI_API_KEY manquante dans env.js";
+            console.error(errorMsg);
+            throw new Error(errorMsg);
         }
 
         const requestPayload = {
@@ -46,36 +45,65 @@ class DeepSeekAPI {
             return cached;
         }
 
-        const modelName = window.__ENV__?.GEMINI_MODEL || "gemini-1.5-flash";
         const systemInstruction = this.getSystemPrompt(requestPayload.mode);
+        const promptText = `Problème: ${requestPayload.problemStatement}\n${requestPayload.attempt ? `Ma tentative: ${requestPayload.attempt}` : ''}`;
         
-        const model = this.genAI.getGenerativeModel({ 
-            model: modelName,
-            systemInstruction: systemInstruction 
-        });
-
-        const prompt = `Problème: ${requestPayload.problemStatement}\n${requestPayload.attempt ? `Ma tentative: ${requestPayload.attempt}` : ''}`;
+        // URL officielle Google Gemini REST API pour le streaming (SSE)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${apiKey}`;
         
         let fullText = "";
-        let reasoning = "";
-        let solution = "";
 
         try {
-            const result = await model.generateContentStream(prompt);
+            console.log(`[IA] Appel direct vers Google Gemini: ${modelName}`);
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction }] }
+                })
+            });
 
-            for await (const chunk of result.stream) {
-                fullText += chunk.text();
-
-                // Séparation dynamique entre Démarche et Solution basée sur les balises imposées
-                const parts = this.splitContent(fullText);
-                reasoning = parts.reasoning;
-                solution = parts.solution;
-
-                if (onReasoning) onReasoning(reasoning, false);
-                if (onSolution) onSolution(solution, false);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || "Erreur lors de la requête à Gemini");
             }
 
-            const finalResult = { reasoning, solution };
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop(); // On garde la ligne incomplète
+
+                for (const line of lines) {
+                    const cleanLine = line.trim();
+                    if (!cleanLine.startsWith("data: ")) continue;
+
+                    try {
+                        const json = JSON.parse(cleanLine.substring(6));
+                        // Format de réponse Gemini REST
+                        const textChunk = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                        
+                        if (textChunk) {
+                            fullText += textChunk;
+                            const parts = this.splitContent(fullText);
+                            if (onReasoning) onReasoning(parts.reasoning, false);
+                            if (onSolution) onSolution(parts.solution, false);
+                        }
+                    } catch (e) {
+                        // Erreur de parsing sur un chunk incomplet, on ignore
+                    }
+                }
+            }
+
+            const finalResult = this.splitContent(fullText);
             this.setCachedResult(cacheKey, finalResult);
             return finalResult;
         } catch (error) {
@@ -157,4 +185,5 @@ class DeepSeekAPI {
     }
 }
 
-const deepseek = new DeepSeekAPI();
+// Rendre l'instance accessible globalement pour exercises.js et main.js
+window.deepseek = new DeepSeekAPI();
