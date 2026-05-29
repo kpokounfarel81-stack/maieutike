@@ -43,11 +43,11 @@ class DeepSeekAPI {
             return cached;
         }
 
-        // Liste des modèles officiels valides (Gemini 2.5 n'existe pas encore en version publique stable)
+        // Liste des modèles mis à jour (Note : identifiants spécifiés pour la bascule de secours)
         const modelsToTry = [
-            (window.__ENV__?.GEMINI_MODEL || "gemini-2.0-flash").trim(),
-            "gemini-1.5-flash",
-            "gemini-1.5-pro"
+            (window.__ENV__?.GEMINI_MODEL || "gemini-2.5-flash").trim(),
+            "gemini-3.5-flash",
+            "gemini-2.5-pro"
         ];
 
         // Supprimer les doublons potentiels

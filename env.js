@@ -7,7 +7,7 @@ window.__ENV__ = {
     SUPABASE_URL: "https://lowhqvqynqanwvxsuqha.supabase.co",
     SUPABASE_ANON_KEY: "sb_publishable_14EgjL1bdg4cACqNykhjug_cYrSiqIV",
     GEMINI_API_KEY: "AQ.Ab8RN6Jsq1iAjx5OZOHf_lkWeWexx5ylXgXfvwi63bFlNn8PaA",
-    GEMINI_MODEL: "gemini-2.0-flash", 
+    GEMINI_MODEL: "gemini-2.5-flash", 
     APP_NAME: "Maieutik UAC",
     APP_VERSION: "1.0.0"
 };
