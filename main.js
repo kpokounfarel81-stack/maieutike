@@ -277,7 +277,8 @@ class Router {
                 UIManager.showNotification('Reponse IA prete!', 'success');
                 exerciseManager.clearCurrentExercise();
             } catch (error) {
-                errorDiv.textContent = error.message;
+                console.error("Détail de l'erreur IA:", error);
+                errorDiv.textContent = error.message || (typeof error === 'string' ? error : "Une erreur inconnue est survenue");
                 errorDiv.classList.remove('hidden');
                 reasoningContent.innerHTML = '<p class="text-red-600">Erreur lors de la demarche</p>';
                 solutionContent.innerHTML = '<p class="text-red-600">Erreur lors de la reponse IA</p>';

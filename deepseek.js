@@ -72,8 +72,11 @@ class DeepSeekAPI {
         });
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            throw new Error(error.error || 'Erreur API IA');
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = (errorData.error && typeof errorData.error === 'object')
+                ? (errorData.error.message || JSON.stringify(errorData.error))
+                : (errorData.error || 'Erreur API IA');
+            throw new Error(errorMessage);
         }
 
         const result = await this.readEventStream(response, onReasoning, onSolution);
