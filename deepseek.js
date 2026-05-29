@@ -22,8 +22,6 @@ class DeepSeekAPI {
 
     async solveProblemStream(problemStatement, onReasoning, onSolution, options = {}) {
         const apiKey = (window.__ENV__?.GEMINI_API_KEY || "").trim();
-        const modelName = window.__ENV__?.GEMINI_MODEL || "gemini-2.0-flash";
-
         if (!apiKey) {
             const errorMsg = "Erreur : Clé GEMINI_API_KEY manquante dans env.js";
             console.error(errorMsg);
@@ -45,74 +43,101 @@ class DeepSeekAPI {
             return cached;
         }
 
-        const systemInstruction = this.getSystemPrompt(requestPayload.mode);
-        const promptText = `Problème: ${requestPayload.problemStatement}\n${requestPayload.attempt ? `Ma tentative: ${requestPayload.attempt}` : ''}`;
-        
-        // URL officielle Google Gemini REST API (Endpoint recommandé)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse`;
-        
-        let fullText = "";
+        // Liste des modèles à essayer en cas de quota dépassé (429) ou erreur serveur (403)
+        const modelsToTry = [
+            (window.__ENV__?.GEMINI_MODEL || "gemini-2.0-flash").trim(),
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-8b"
+        ];
 
-        try {
-            console.log(`[IA] Appel direct vers Google Gemini: ${modelName}`);
+        // Supprimer les doublons potentiels
+        const uniqueModels = [...new Set(modelsToTry)];
+        let lastError = null;
+
+        for (let i = 0; i < uniqueModels.length; i++) {
+            const modelName = uniqueModels[i];
+            const systemInstruction = this.getSystemPrompt(requestPayload.mode);
+            const promptText = `Problème: ${requestPayload.problemStatement}\n${requestPayload.attempt ? `Ma tentative: ${requestPayload.attempt}` : ''}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse`;
             
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': apiKey
-                },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }],
-                    systemInstruction: { parts: [{ text: systemInstruction }] }
-                })
-            });
+            let fullText = "";
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error?.message || "Erreur lors de la requête à Gemini");
-            }
+            try {
+                console.log(`[IA] Tentative avec le modèle : ${modelName} (${i + 1}/${uniqueModels.length})`);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey
+                    },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptText }] }],
+                        systemInstruction: { parts: [{ text: systemInstruction }] }
+                    })
+                });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errMsg = errorData.error?.message || "";
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                    // Si erreur de quota (429) ou accès (403), on tente le modèle suivant s'il y en a un
+                    if ((response.status === 429 || response.status === 403 || errMsg.toLowerCase().includes("quota")) && i < uniqueModels.length - 1) {
+                        console.warn(`[IA] Modèle ${modelName} saturé. Bascule sur le modèle de secours...`);
+                        continue; 
+                    }
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split("\n");
-                buffer = lines.pop(); // On garde la ligne incomplète
+                    // Si c'est le dernier modèle ou une autre erreur, on génère le message propre
+                    if (response.status === 429 || errMsg.toLowerCase().includes("quota")) {
+                        throw new Error("Les serveurs gratuits de Google sont saturés. Veuillez patienter 45 secondes avant de soumettre à nouveau l'exercice.");
+                    }
+                    throw new Error(errMsg || "Erreur lors de la requête à Gemini");
+                }
 
-                for (const line of lines) {
-                    const cleanLine = line.trim();
-                    if (!cleanLine.startsWith("data: ")) continue;
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
 
-                    try {
-                        const json = JSON.parse(cleanLine.substring(6));
-                        // Format de réponse Gemini REST
-                        const textChunk = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                        
-                        if (textChunk) {
-                            fullText += textChunk;
-                            const parts = this.splitContent(fullText);
-                            if (onReasoning) onReasoning(parts.reasoning, false);
-                            if (onSolution) onSolution(parts.solution, false);
-                        }
-                    } catch (e) {
-                        // Erreur de parsing sur un chunk incomplet, on ignore
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        const cleanLine = line.trim();
+                        if (!cleanLine.startsWith("data: ")) continue;
+
+                        try {
+                            const json = JSON.parse(cleanLine.substring(6));
+                            const textChunk = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                            
+                            if (textChunk) {
+                                fullText += textChunk;
+                                const parts = this.splitContent(fullText);
+                                if (onReasoning) onReasoning(parts.reasoning, false);
+                                if (onSolution) onSolution(parts.solution, false);
+                            }
+                        } catch (e) { }
                     }
                 }
-            }
 
-            const finalResult = this.splitContent(fullText);
-            this.setCachedResult(cacheKey, finalResult);
-            return finalResult;
-        } catch (error) {
-            console.error("Gemini API Error:", error);
-            throw new Error(`Erreur Gemini: ${error.message}`);
+                const finalResult = this.splitContent(fullText);
+                this.setCachedResult(cacheKey, finalResult);
+                return finalResult;
+
+            } catch (error) {
+                lastError = error;
+                // En cas d'erreur de réseau ou de quota pendant le streaming, on tente le suivant si possible
+                if (i < uniqueModels.length - 1 && (error.message.includes("429") || error.message.toLowerCase().includes("quota"))) {
+                    continue;
+                }
+                throw error;
+                        }
         }
+        throw lastError;
     }
 
     getSystemPrompt(mode) {
