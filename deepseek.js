@@ -127,16 +127,32 @@ class DeepSeekAPI {
                 const parsed = this.parseSseEventBlock(block);
                 if (!parsed) continue;
 
-                if (parsed.event === 'reasoning') {
+                // Gestion des flux avec événements nommés (Proxy server.js / Vercel)
+                if (parsed.event === 'reasoning' || parsed.event === 'solution') {
                     const delta = parsed.data?.delta ?? '';
-                    if (delta) reasoning += delta;
-                    if (onReasoning) onReasoning(reasoning, false);
-                }
-
-                if (parsed.event === 'solution') {
-                    const delta = parsed.data?.delta ?? '';
-                    if (delta) solution += delta;
-                    if (onSolution) onSolution(solution, false);
+                    if (parsed.event === 'reasoning') {
+                        reasoning += delta;
+                        if (onReasoning) onReasoning(reasoning, false);
+                    } else {
+                        solution += delta;
+                        if (onSolution) onSolution(solution, false);
+                    }
+                } 
+                // Gestion des flux standards OpenAI / OpenRouter (GitHub Pages direct)
+                else if (parsed.event === 'message' && parsed.data?.choices?.[0]?.delta) {
+                    const delta = parsed.data.choices[0].delta;
+                    
+                    // Détection du raisonnement (DeepSeek R1 / OpenRouter)
+                    if (delta.reasoning_content) {
+                        reasoning += delta.reasoning_content;
+                        if (onReasoning) onReasoning(reasoning, false);
+                    }
+                    
+                    // Détection du contenu
+                    if (delta.content) {
+                        solution += delta.content;
+                        if (onSolution) onSolution(solution, false);
+                    }
                 }
 
                 if (parsed.event === 'done') {
@@ -173,12 +189,13 @@ class DeepSeekAPI {
         for (const line of lines) {
             if (line.startsWith('event:')) {
                 event = line.slice('event:'.length).trim();
-                continue;
-            }
-            if (line.startsWith('data:')) {
+            } else if (line.startsWith('data:')) {
                 dataLines.push(line.slice('data:'.length).trim());
             }
         }
+
+        // Si pas d'événement spécifié (flux direct OpenRouter), on utilise 'message' par défaut
+        if (!event && dataLines.length > 0) event = 'message';
 
         if (!event || dataLines.length === 0) return null;
 

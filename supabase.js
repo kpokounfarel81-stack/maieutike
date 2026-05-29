@@ -144,7 +144,7 @@ class SupabaseClient {
             }
 
             // Crée profil (RLS attend user_id = auth.uid())
-            await this.createUserProfile(this.user.id, normalizedEmail, fullName).catch((err) => console.error("Profil creation error:", err));
+            await this.createUserProfile(this.user.id, normalizedEmail, fullName).catch(() => {});
 
             // expose compat
             const token = this.session?.access_token || null;
@@ -209,14 +209,13 @@ class SupabaseClient {
 
     async createUserProfile(userId, email, fullName) {
         const { error } = await this.supabase.from('profiles').insert({
-            id: userId,
+            id: userId, // Correspond au PRIMARY KEY id UUID dans SETUP.md
             email,
             full_name: fullName
         });
 
         // non-bloquant (profil peut déjà exister)
         if (error) {
-            // eslint-disable-next-line no-console
             console.warn('Create profile (maybe exists):', error.message || error);
         }
     }
