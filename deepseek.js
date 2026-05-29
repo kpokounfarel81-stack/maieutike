@@ -1,34 +1,25 @@
 /**
- * Client IA Maieutik.
- * Les appels passent par server.js pour garder la cle API hors du navigateur.
+ * Client IA Maieutik - Migration vers Google Gemini SDK
  */
 
-const AI_MODES = {
-    solve: 'Resolution complete',
-    hint: 'Indice progressif',
-    guide: 'Questions guidees',
-    review: 'Corriger ma tentative',
-    explain: 'Expliquer autrement'
-};
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 class DeepSeekAPI {
     constructor() {
-        this.endpoint = window.__ENV__?.AI_PROXY_URL || 'https://api.deepseek.com/v1/chat/completions';
+        const apiKey = window.__ENV__?.GEMINI_API_KEY;
+        if (apiKey) {
+            this.genAI = new GoogleGenerativeAI(apiKey);
+        }
         this.cachePrefix = 'maieutik_ai_cache_';
     }
 
     async solveProblem(problemStatement, options = {}) {
         let reasoning = '';
         let solution = '';
-
         await this.solveProblemStream(
             problemStatement,
-            (nextReasoning) => {
-                reasoning = nextReasoning;
-            },
-            (nextSolution) => {
-                solution = nextSolution;
-            },
+            (nextReasoning) => { reasoning = nextReasoning; },
+            (nextSolution) => { solution = nextSolution; },
             options
         );
 
@@ -36,15 +27,9 @@ class DeepSeekAPI {
     }
 
     async solveProblemStream(problemStatement, onReasoning, onSolution, options = {}) {
-        // Sécurisation du chargement : Vérification immédiate de la clé
-        const apiKey = (window.__ENV__?.DEEPSEEK_API_KEY || "").trim();
-        if (!apiKey) {
-            const errorMsg = 'Erreur : Clé OpenRouter manquante dans env.js. Veuillez la configurer.';
-            console.error(errorMsg);
-            throw new Error(errorMsg);
+        if (!this.genAI) {
+            throw new Error("Clé GEMINI_API_KEY manquante dans env.js");
         }
-
-        const isDirectCall = this.endpoint.includes('deepseek.com') || this.endpoint.includes('openrouter.ai');
 
         const requestPayload = {
             problemStatement: problemStatement || '',
@@ -56,172 +41,72 @@ class DeepSeekAPI {
         const cacheKey = await this.getCacheKey(requestPayload);
         const cached = this.getCachedResult(cacheKey);
         if (cached) {
-            if (onReasoning) onReasoning(cached.reasoning, true);
-            if (onSolution) onSolution(cached.solution, true);
+            onReasoning?.(cached.reasoning, true);
+            onSolution?.(cached.solution, true);
             return cached;
         }
 
-        const headers = { 
-            'Content-Type': 'application/json'
-        };
+        const modelName = window.__ENV__?.GEMINI_MODEL || "gemini-1.5-flash";
+        const systemInstruction = this.getSystemPrompt(requestPayload.mode);
         
-        // Si appel direct (GitHub Pages), on injecte la clé depuis l'env
-        if (isDirectCall) {
-            headers['Authorization'] = `Bearer ${apiKey}`;
-            
-            // En-têtes requis par OpenRouter pour le déploiement navigateur
-            if (this.endpoint.includes('openrouter.ai')) {
-                headers['HTTP-Referer'] = window.location.href;
-                headers['X-Title'] = window.__ENV__?.APP_NAME || 'Maieutik';
-            }
-        }
-
-        const body = isDirectCall 
-            ? JSON.stringify(this.buildDirectPayload(requestPayload))
-            : JSON.stringify(requestPayload);
-
-        console.log(`[IA] Appel vers ${this.endpoint} avec le modèle ${window.__ENV__?.DEEPSEEK_MODEL}`);
-
-        const response = await fetch(this.endpoint, {
-            method: 'POST',
-            headers: headers,
-            body: body
+        const model = this.genAI.getGenerativeModel({ 
+            model: modelName,
+            systemInstruction: systemInstruction 
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMessage = (errorData.error && typeof errorData.error === 'object')
-                ? (errorData.error.message || JSON.stringify(errorData.error))
-                : (errorData.error || 'Erreur API IA');
-            throw new Error(errorMessage);
-        }
-
-        const result = await this.readEventStream(response, onReasoning, onSolution);
-        this.setCachedResult(cacheKey, result);
-        return result;
-    }
-
-    /**
-     * SSE parsing robuste.
-     * Le serveur envoie :
-     *   event: reasoning\n data: {...}\n\n
-     *   event: solution\n  data: {...}\n\n
-     *   event: done\n       data: {...}\n\n
-     */
-    async readEventStream(response, onReasoning, onSolution) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        let buffer = '';
-        let reasoning = '';
-        let solution = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-
-            // Les blocs SSE sont séparés par "\n\n".
-            const blocks = buffer.split(/\n\n/);
-            buffer = blocks.pop() || '';
-
-            for (const block of blocks) {
-                const parsed = this.parseSseEventBlock(block);
-                if (!parsed) continue;
-
-                // Gestion des flux avec événements nommés (Proxy server.js / Vercel)
-                if (parsed.event === 'reasoning' || parsed.event === 'solution') {
-                    const delta = parsed.data?.delta ?? '';
-                    if (parsed.event === 'reasoning') {
-                        reasoning += delta;
-                        if (onReasoning) onReasoning(reasoning, false);
-                    } else {
-                        solution += delta;
-                        if (onSolution) onSolution(solution, false);
-                    }
-                }
-                // Gestion des flux standards OpenAI / OpenRouter (GitHub Pages direct)
-                else if (parsed.event === 'message' && parsed.data?.choices?.[0]?.delta) {
-                    const delta = parsed.data.choices[0].delta;
-                    if (delta.reasoning_content) {
-                        reasoning += delta.reasoning_content;
-                        if (onReasoning) onReasoning(reasoning, false);
-                    }
-                    if (delta.content) {
-                        solution += delta.content;
-                        if (onSolution) onSolution(solution, false);
-                    }
-                }
-
-                if (parsed.event === 'done') {
-                    if (typeof parsed.data?.reasoning === 'string' && parsed.data.reasoning.trim()) {
-                        reasoning = parsed.data.reasoning;
-                    }
-                    if (typeof parsed.data?.solution === 'string' && parsed.data.solution.trim()) {
-                        solution = parsed.data.solution;
-                    }
-                    if (onReasoning) onReasoning(reasoning, false);
-                    if (onSolution) onSolution(solution, false);
-                }
-
-                if (parsed.event === 'error') {
-                    throw new Error(parsed.data?.error || 'Erreur streaming IA');
-                }
-            }
-        }
-
-        return {
-            reasoning: reasoning || 'Demarche integree dans la reponse.',
-            solution: solution || 'Solution indisponible'
-        };
-    }
-
-    buildDirectPayload(payload) {
-        return {
-            model: window.__ENV__?.DEEPSEEK_MODEL || "google/gemma-2-9b-it:free",
-            messages: [
-                { 
-                    role: "system", 
-                    content: "Tu es un tuteur expert en maïeutique. Aide l'étudiant à comprendre par lui-même." 
-                },
-                { 
-                    role: "user", 
-                    content: payload.attempt ? `Problème: ${payload.problemStatement}\nTentative: ${payload.attempt}` : payload.problemStatement 
-                }
-            ],
-            stream: true
-        };
-    }
-
-    // Accepte plusieurs lignes "data:" (RFC SSE) et reconstitue le JSON.
-    parseSseEventBlock(block) {
-        if (!block || !block.trim()) return null;
-
-        const lines = block.split(/\r?\n/);
-        let event = null;
-        const dataLines = [];
-
-        for (const line of lines) {
-            if (line.startsWith('event:')) {
-                event = line.slice('event:'.length).trim();
-            } else if (line.startsWith('data:')) {
-                dataLines.push(line.slice('data:'.length).trim());
-            }
-        }
-
-        // Par défaut pour OpenRouter
-        if (!event && dataLines.length > 0) event = 'message';
-
-        if (!event || dataLines.length === 0) return null;
+        const prompt = `Problème: ${requestPayload.problemStatement}\n${requestPayload.attempt ? `Ma tentative: ${requestPayload.attempt}` : ''}`;
+        
+        let fullText = "";
+        let reasoning = "";
+        let solution = "";
 
         try {
-            const dataRaw = dataLines.join('\n');
-            return { event, data: JSON.parse(dataRaw) };
-        } catch (e) {
-            console.warn('Evenement IA ignore:', e);
-            return null;
+            const result = await model.generateContentStream(prompt);
+
+            for await (const chunk of result.stream) {
+                fullText += chunk.text();
+
+                // Séparation dynamique entre Démarche et Solution basée sur les balises imposées
+                const parts = this.splitContent(fullText);
+                reasoning = parts.reasoning;
+                solution = parts.solution;
+
+                if (onReasoning) onReasoning(reasoning, false);
+                if (onSolution) onSolution(solution, false);
+            }
+
+            const finalResult = { reasoning, solution };
+            this.setCachedResult(cacheKey, finalResult);
+            return finalResult;
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            throw new Error(`Erreur Gemini: ${error.message}`);
         }
+    }
+
+    getSystemPrompt(mode) {
+        const prompts = {
+            solve: "Tu es un tuteur expert en maïeutique. Résous le problème étape par étape. Tu DOIS impérativement diviser ta réponse en deux sections : commence par '## Démarche' pour expliquer la réflexion, puis '## Solution' pour donner la réponse finale.",
+            hint: "Ne donne pas la solution. Donne un indice subtil sous '## Démarche' et encourage l'élève sous '## Solution'.",
+            guide: "Pose des questions socratiques sous '## Démarche' pour guider l'élève vers la solution '## Solution'.",
+            explain: "Explique le concept mathématique de manière imagée sous '## Démarche' et résume sous '## Solution'."
+        };
+        return prompts[mode] || prompts.solve;
+    }
+
+    splitContent(text) {
+        const demarcation = "## Solution";
+        if (text.includes(demarcation)) {
+            const parts = text.split(demarcation);
+            return {
+                reasoning: parts[0].replace("## Démarche", "").trim(),
+                solution: parts[1].trim()
+            };
+        }
+        return {
+            reasoning: text.replace("## Démarche", "").trim(),
+            solution: ""
+        };
     }
 
     async getCacheKey(payload) {

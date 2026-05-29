@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maieutik - Tuteur IA</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -159,11 +160,20 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
+    <!-- SDK Google Generative AI -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
+
     <!-- 3. Scripts de l'Application (Structure aplatie à la racine) -->
     <script src="./supabase.js"></script>
     <script src="./auth.js"></script>
     <script src="./ui.js"></script>
-    <script src="./deepseek.js"></script>
+    <script type="module" src="./deepseek.js"></script>
     <script src="./exercises.js"></script>
     <script src="./main.js"></script>
 </body>
