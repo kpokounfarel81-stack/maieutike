@@ -22,7 +22,7 @@ class DeepSeekAPI {
 
     async solveProblemStream(problemStatement, onReasoning, onSolution, options = {}) {
         const apiKey = (window.__ENV__?.GEMINI_API_KEY || "").trim();
-        const modelName = window.__ENV__?.GEMINI_MODEL || "gemini-1.5-flash";
+        const modelName = window.__ENV__?.GEMINI_MODEL || "gemini-2.0-flash";
 
         if (!apiKey) {
             const errorMsg = "Erreur : Clé GEMINI_API_KEY manquante dans env.js";
@@ -48,8 +48,8 @@ class DeepSeekAPI {
         const systemInstruction = this.getSystemPrompt(requestPayload.mode);
         const promptText = `Problème: ${requestPayload.problemStatement}\n${requestPayload.attempt ? `Ma tentative: ${requestPayload.attempt}` : ''}`;
         
-        // URL officielle Google Gemini REST API pour le streaming (SSE)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${apiKey}`;
+        // URL officielle Google Gemini REST API (Endpoint recommandé)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse`;
         
         let fullText = "";
 
@@ -58,7 +58,10 @@ class DeepSeekAPI {
             
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': apiKey
+                },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: promptText }] }],
                     systemInstruction: { parts: [{ text: systemInstruction }] }
