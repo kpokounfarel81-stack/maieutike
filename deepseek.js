@@ -43,11 +43,11 @@ class DeepSeekAPI {
             return cached;
         }
 
-        // Liste des modèles à essayer en cas de quota dépassé (429) ou erreur serveur (403)
+        // Liste des modèles officiels actifs à essayer en cas de quota (429) ou erreur 404
         const modelsToTry = [
             (window.__ENV__?.GEMINI_MODEL || "gemini-2.0-flash").trim(),
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-8b"
+            "gemini-2.5-flash",
+            "gemini-2.5-pro"
         ];
 
         // Supprimer les doublons potentiels
@@ -81,9 +81,9 @@ class DeepSeekAPI {
                     const errorData = await response.json().catch(() => ({}));
                     const errMsg = errorData.error?.message || "";
 
-                    // Si erreur de quota (429) ou accès (403), on tente le modèle suivant s'il y en a un
-                    if ((response.status === 429 || response.status === 403 || errMsg.toLowerCase().includes("quota")) && i < uniqueModels.length - 1) {
-                        console.warn(`[IA] Modèle ${modelName} saturé. Bascule sur le modèle de secours...`);
+                    // Si erreur de quota (429), modèle introuvable (404) ou accès (403), on tente le suivant
+                    if ((response.status === 429 || response.status === 404 || response.status === 403 || errMsg.toLowerCase().includes("quota")) && i < uniqueModels.length - 1) {
+                        console.warn(`[IA] Modèle ${modelName} non disponible ou saturé. Bascule sur le modèle de secours...`);
                         continue; 
                     }
 
@@ -131,7 +131,7 @@ class DeepSeekAPI {
             } catch (error) {
                 lastError = error;
                 // En cas d'erreur de réseau ou de quota pendant le streaming, on tente le suivant si possible
-                if (i < uniqueModels.length - 1 && (error.message.includes("429") || error.message.toLowerCase().includes("quota"))) {
+                if (i < uniqueModels.length - 1 && (error.message.includes("429") || error.message.includes("404") || error.message.toLowerCase().includes("quota"))) {
                     continue;
                 }
                 throw error;
