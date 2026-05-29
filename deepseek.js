@@ -43,11 +43,11 @@ class DeepSeekAPI {
             return cached;
         }
 
-        // Liste des modèles officiels actifs à essayer en cas de quota (429) ou erreur 404
+        // Liste des modèles officiels valides (Gemini 2.5 n'existe pas encore en version publique stable)
         const modelsToTry = [
             (window.__ENV__?.GEMINI_MODEL || "gemini-2.0-flash").trim(),
-            "gemini-2.5-flash",
-            "gemini-2.5-pro"
+            "gemini-1.5-flash",
+            "gemini-1.5-pro"
         ];
 
         // Supprimer les doublons potentiels
@@ -151,16 +151,24 @@ class DeepSeekAPI {
     }
 
     splitContent(text) {
-        const demarcation = "## Solution";
-        if (text.includes(demarcation)) {
-            const parts = text.split(demarcation);
+        // Recherche insensible à la casse et plus flexible pour les balises
+        const solutionRegex = /##\s*Solution/i;
+        const démarcheRegex = /##\s*D[ée]marche/gi;
+
+        const match = text.match(solutionRegex);
+        
+        if (match) {
+            const index = match.index;
+            const reasoningPart = text.substring(0, index);
+            const solutionPart = text.substring(index + match[0].length);
+
             return {
-                reasoning: parts[0].replace("## Démarche", "").trim(),
-                solution: parts[1].trim()
+                reasoning: reasoningPart.replace(démarcheRegex, "").trim(),
+                solution: solutionPart.trim()
             };
         }
         return {
-            reasoning: text.replace("## Démarche", "").trim(),
+            reasoning: text.replace(démarcheRegex, "").trim(),
             solution: ""
         };
     }
