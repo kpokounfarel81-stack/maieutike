@@ -58,7 +58,7 @@ class DeepSeekAPI {
         
         // Si appel direct (GitHub Pages), on injecte la clé depuis l'env
         if (isDirectCall) {
-            const apiKey = window.__ENV__?.DEEPSEEK_API_KEY;
+            const apiKey = (window.__ENV__?.DEEPSEEK_API_KEY || "").trim();
             if (!apiKey) throw new Error("Clé API IA manquante pour l'appel direct sur GitHub Pages.");
             headers['Authorization'] = `Bearer ${apiKey}`;
             
@@ -72,6 +72,8 @@ class DeepSeekAPI {
         const body = isDirectCall 
             ? JSON.stringify(this.buildDirectPayload(requestPayload))
             : JSON.stringify(requestPayload);
+
+        console.log(`[IA] Appel vers ${this.endpoint} avec le modèle ${window.__ENV__?.DEEPSEEK_MODEL}`);
 
         const response = await fetch(this.endpoint, {
             method: 'POST',
