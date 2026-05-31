@@ -134,20 +134,30 @@ class UIManager {
     }
 
     /**
-     * Parser le contenu avec LaTeX
+     * Rendu des formules mathématiques avec KaTeX
+     * Supporte les délimiteurs standards et les parenthèses simples
      */
-    static renderLaTeX(element = document.body) {
+    static renderMath(element) {
+        const target = element || document.body;
         if (typeof renderMathInElement === 'function') {
-            renderMathInElement(element, {
+            renderMathInElement(target, {
                 delimiters: [
                     {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
                     {left: '$', right: '$', display: false},
                     {left: '\\(', right: '\\)', display: false},
-                    {left: '\\[', right: '\\]', display: true}
+                    {left: '(', right: ')', display: false}
                 ],
                 throwOnError: false
             });
         }
+    }
+
+    /**
+     * Alias pour compatibilité avec les anciens appels
+     */
+    static renderLaTeX(element) {
+        this.renderMath(element);
     }
 }
 
