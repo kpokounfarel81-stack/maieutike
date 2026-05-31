@@ -77,12 +77,52 @@
                 </div>
             </div>
             <div class="order-1 md:order-2 flex justify-center items-center">
-                <svg class="w-full max-w-md drop-shadow-2xl" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#0F172A" d="M44.7,-76.4C58.8,-69.2,71.8,-59.1,79.6,-45.8C87.4,-32.5,90,-16.3,88.5,-0.9C87,14.5,81.4,29,73.6,42.3C65.8,55.6,55.8,67.7,42.4,75.1C29,82.5,14.5,85.2,0.8,83.8C-12.9,82.4,-25.8,76.9,-38.4,69.1C-51,61.3,-63.3,51.3,-71.4,38.6C-79.5,25.9,-83.4,10.5,-82.1,-4.2C-80.8,-18.9,-74.3,-32.9,-65,-44C-55.7,-55.1,-43.6,-63.3,-31,-71.4C-18.4,-79.5,-9.2,-87.5,4.6,-95.5C18.4,-103.5,30.6,-83.6,44.7,-76.4Z" transform="translate(100 100)" opacity="0.05" />
-                    <circle cx="100" cy="100" r="40" fill="none" stroke="#0F172A" stroke-width="0.5" />
-                    <circle cx="100" cy="100" r="60" fill="none" stroke="#0F172A" stroke-width="0.2" opacity="0.5" />
-                    <path d="M85 85 L115 115 M115 85 L85 115" stroke="#0F172A" stroke-width="1" />
-                    <text x="100" y="105" text-anchor="middle" font-family="Playfair Display" font-size="8" fill="#0F172A">LOGOS</text>
+                <svg class="w-full max-w-md drop-shadow-3xl" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="hubGradient" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#4f46e5" />
+                            <stop offset="100%" stop-color="#3730a3" />
+                        </radialGradient>
+                        <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+                    
+                    <!-- Ondes de réflexion géométriques -->
+                    <g fill="none" stroke="#cbd5e1" stroke-width="0.5">
+                        <circle cx="200" cy="200" r="180" stroke-dasharray="1, 4" opacity="0.3" />
+                        <circle cx="200" cy="200" r="140" opacity="0.4" />
+                        <circle cx="200" cy="200" r="100" stroke-dasharray="4, 2" opacity="0.5" />
+                    </g>
+
+                    <!-- Réseau Neuronal (Connexions) -->
+                    <g stroke="#94a3b8" stroke-width="0.5" opacity="0.6">
+                        <line x1="200" y1="200" x2="310" y2="120" />
+                        <line x1="200" y1="200" x2="90" y2="280" />
+                        <line x1="200" y1="200" x2="200" y2="60" />
+                        <line x1="200" y1="200" x2="340" y2="200" />
+                        <line x1="200" y1="200" x2="60" y2="200" />
+                        <line x1="200" y1="200" x2="290" y2="300" />
+                        <line x1="200" y1="200" x2="110" y2="100" />
+                    </g>
+
+                    <!-- Nœuds de données -->
+                    <g fill="#94a3b8">
+                        <circle cx="310" cy="120" r="3" />
+                        <circle cx="90" cy="280" r="3" />
+                        <circle cx="200" cy="60" r="3" />
+                        <circle cx="340" cy="200" r="3" />
+                        <circle cx="60" cy="200" r="3" />
+                        <circle cx="290" cy="300" r="3" />
+                        <circle cx="110" cy="100" r="3" />
+                    </g>
+
+                    <!-- Nœud Central (Hub Maïeutique) -->
+                    <circle cx="200" cy="200" r="30" fill="#4f46e5" opacity="0.05">
+                        <animate attributeName="r" values="30;45;30" dur="4s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="200" cy="200" r="10" fill="url(#hubGradient)" filter="url(#softGlow)" />
                 </svg>
             </div>
         </div>
