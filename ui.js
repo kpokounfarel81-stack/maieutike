@@ -136,9 +136,17 @@ class UIManager {
     /**
      * Parser le contenu avec LaTeX
      */
-    static renderLaTeX() {
-        if (window.MathJax) {
-            MathJax.typesetPromise().catch(err => console.error('LaTeX error:', err));
+    static renderLaTeX(element = document.body) {
+        if (typeof renderMathInElement === 'function') {
+            renderMathInElement(element, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
         }
     }
 }
