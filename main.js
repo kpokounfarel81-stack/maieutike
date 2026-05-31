@@ -262,13 +262,13 @@ class Router {
                     (reasoning, fromCache) => {
                         if (fromCache) cacheNotice.classList.remove('hidden');
                         reasoningContent.innerHTML = UIManager.renderMarkdown(reasoning || 'Demarche indisponible');
-                        UIManager.renderLaTeX();
+                        UIManager.renderMath(reasoningContent);
                         reasoningContent.scrollTop = reasoningContent.scrollHeight;
                     },
                     (solution, fromCache) => {
                         if (fromCache) cacheNotice.classList.remove('hidden');
                         solutionContent.innerHTML = UIManager.renderMarkdown(solution || 'Solution indisponible');
-                        UIManager.renderLaTeX();
+                        UIManager.renderMath(solutionContent);
                         solutionContent.scrollTop = solutionContent.scrollHeight;
                     },
                     { mode, attempt, attachments }
@@ -303,7 +303,8 @@ class Router {
         solutionSection.classList.remove('hidden');
         reasoningContent.innerHTML = UIManager.renderMarkdown(exercise.reasoning_content || 'Demarche indisponible');
         solutionContent.innerHTML = UIManager.renderMarkdown(exercise.solution_content || 'Solution indisponible');
-        UIManager.renderLaTeX();
+        UIManager.renderMath(reasoningContent);
+        UIManager.renderMath(solutionContent);
     }
 
     async readAttachments(files) {
