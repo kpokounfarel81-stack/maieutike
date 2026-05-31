@@ -8,7 +8,7 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
@@ -30,28 +30,60 @@
     <div id="loadingApp" class="fixed inset-0 bg-white flex items-center justify-center z-[100]">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
     </div>
-    <div class="min-h-screen flex flex-col">
-        <header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="router.navigate('home')">
-                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">M</div>
-                <h1 class="text-xl font-bold tracking-tight">Maieutik</h1>
+    <div class="min-h-screen flex flex-col bg-[#f8fafc]">
+        <header class="fixed top-0 left-0 right-0 z-50 px-8 py-4 flex justify-between items-center transition-all">
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="router.navigate('home')">
+                <div class="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-white font-serif text-xl group-hover:bg-slate-800">M</div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">Maieutik</h1>
             </div>
-            <nav id="nav-user" class="hidden items-center gap-4">
-                <span id="user-display" class="text-sm font-medium text-slate-600"></span>
-                <button onclick="authManager.logout()" class="text-sm text-red-500 hover:text-red-700">Déconnexion</button>
-            </nav>
+            
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
+                <a href="#" class="hover:text-slate-900">Fonctionnalités</a>
+                <a href="#" class="hover:text-slate-900">Solutions</a>
+                <a href="#" class="hover:text-slate-900">Contact</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <nav id="nav-user" class="hidden items-center gap-6">
+                    <span id="user-display" class="text-sm font-semibold text-slate-700"></span>
+                    <button onclick="authManager.logout()" class="text-sm text-red-500 hover:text-red-700 font-medium">Quitter</button>
+                </nav>
+                <div id="nav-auth" class="flex gap-2">
+                    <button onclick="router.navigate('login')" class="px-5 py-2 text-sm font-bold text-slate-900 hover:bg-white/50 rounded-lg">Connexion</button>
+                </div>
+            </div>
         </header>
+
+        <main id="app" class="flex-1 pt-24 px-6"></main>
+        <footer class="py-12 border-t border-slate-200 text-center text-slate-400 text-sm font-medium tracking-wide bg-white/30">&copy; 2025 Maieutik — L'excellence de l'accompagnement pédagogique</footer>
         <main id="app" class="flex-1 container mx-auto max-w-4xl p-6"></main>
         <footer class="py-6 text-center text-slate-400 text-xs">&copy; 2024 Maieutik UAC - Tuteur Intelligent</footer>
     </div>
 
     <!-- Templates -->
     <template id="homePage">
-        <div class="text-center py-20">
-            <h1 class="text-4xl font-extrabold mb-6">Apprenez intelligemment avec l'IA</h1>
-            <div class="flex justify-center gap-4">
-                <button onclick="router.navigate('signup')" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold">Commencer</button>
-                <button onclick="router.navigate('login')" class="bg-white border px-8 py-3 rounded-xl font-bold">Connexion</button>
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center py-12 md:py-24">
+            <div class="text-left space-y-8 order-2 md:order-1 animate-slide-up">
+                <h1 class="font-serif text-5xl md:text-7xl leading-tight text-slate-900">
+                    La maïeutique <br>
+                    <span class="italic font-normal text-slate-500">réinventée par l'IA.</span>
+                </h1>
+                <p class="text-xl text-slate-600 leading-relaxed max-w-lg">
+                    Accédez à un tuteur de haut niveau capable de décomposer les problèmes les plus complexes en étapes de raisonnement pures et logiques.
+                </p>
+                <div class="flex flex-wrap gap-4 pt-4">
+                    <button onclick="router.navigate('signup')" class="btn-primary">Commencer l'expérience</button>
+                    <button onclick="router.navigate('login')" class="btn-secondary">Découvrir les solutions</button>
+                </div>
+            </div>
+            <div class="order-1 md:order-2 flex justify-center items-center">
+                <svg class="w-full max-w-md drop-shadow-2xl" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#0F172A" d="M44.7,-76.4C58.8,-69.2,71.8,-59.1,79.6,-45.8C87.4,-32.5,90,-16.3,88.5,-0.9C87,14.5,81.4,29,73.6,42.3C65.8,55.6,55.8,67.7,42.4,75.1C29,82.5,14.5,85.2,0.8,83.8C-12.9,82.4,-25.8,76.9,-38.4,69.1C-51,61.3,-63.3,51.3,-71.4,38.6C-79.5,25.9,-83.4,10.5,-82.1,-4.2C-80.8,-18.9,-74.3,-32.9,-65,-44C-55.7,-55.1,-43.6,-63.3,-31,-71.4C-18.4,-79.5,-9.2,-87.5,4.6,-95.5C18.4,-103.5,30.6,-83.6,44.7,-76.4Z" transform="translate(100 100)" opacity="0.05" />
+                    <circle cx="100" cy="100" r="40" fill="none" stroke="#0F172A" stroke-width="0.5" />
+                    <circle cx="100" cy="100" r="60" fill="none" stroke="#0F172A" stroke-width="0.2" opacity="0.5" />
+                    <path d="M85 85 L115 115 M115 85 L85 115" stroke="#0F172A" stroke-width="1" />
+                    <text x="100" y="105" text-anchor="middle" font-family="Playfair Display" font-size="8" fill="#0F172A">LOGOS</text>
+                </svg>
             </div>
         </div>
     </template>
