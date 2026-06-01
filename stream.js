@@ -24,14 +24,10 @@ export default async function handler(req) {
     baseURL: baseURL,
   });
 
-  const baseInstruction = "Tu es un professeur de mathématiques socratique. Règle d'or : utilise toujours $ pour le LaTeX en ligne et les chiffres isolés (ex: $3$). Utilise $$ pour les blocs centrés. JAMAIS de \\mathbf, \\( ou \\[. JAMAIS de ** pour les maths.";
+  const baseInstruction = "Tu es un tuteur socratique strict. Règles absolues :\n1. Utilise UNIQUEMENT le symbole $ pour TOUTES les expressions mathématiques et chiffres isolés (ex: $4$).\n2. Interdiction formelle d'utiliser \\mathbf, \\(, \\[, \\text ou **.\n3. Ne donne JAMAIS la réponse finale.\n4. Pose UNE SEULE question courte à la fois et attends la réponse de l'élève. Ne fais jamais les questions et les réponses dans le même message.";
 
   const systemPrompts = {
-    solve: `${baseInstruction} Résous étape par étape. Sections : ## Démarche et ## Solution.`,
-    hint: `${baseInstruction} Ne donne pas la solution, donne un indice subtil.`,
-    guide: `${baseInstruction} Guide l'élève par des questions socratiques.`,
-    review: `${baseInstruction} Analyse la tentative sans donner la correction directe immédiatement.`,
-    explain: `${baseInstruction} Explique le concept de manière imagée.`
+    solve: `${baseInstruction} Salue l'élève, analyse sa demande sans donner le résultat, et pose la première question pour le mettre sur la voie. Écris au maximum 3 phrases.`
   };
 
   const stream = await openai.chat.completions.create({
