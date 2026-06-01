@@ -11,7 +11,8 @@ class Router {
             signup: 'signupPage',
             dashboard: 'dashboardPage',
             exercise: 'exercisePage',
-            profile: 'profilePage'
+            profile: 'profilePage',
+            'new-discussion': 'newDiscussionPage'
         };
         this.init();
     }
@@ -36,7 +37,7 @@ class Router {
 
     newExercise() {
         exerciseManager.clearCurrentExercise();
-        this.navigate('exercise');
+        this.navigate('new-discussion');
     }
 
     async handleNavigation() {
@@ -53,7 +54,7 @@ class Router {
             // S'assurer que la session est chargée depuis Supabase
             await authManager.ensureInitialized();
 
-            if (['dashboard', 'exercise', 'profile'].includes(page) && !authManager.isAuthenticated()) {
+            if (['dashboard', 'exercise', 'profile', 'new-discussion'].includes(page) && !authManager.isAuthenticated()) {
                 UIManager.showNotification('Veuillez vous connecter', 'warning');
                 this.navigate('login');
                 return;
@@ -75,15 +76,24 @@ class Router {
     updateNavbar() {
         const nav = document.getElementById('nav-user');
         const tabs = document.getElementById('nav-tabs');
-        const display = document.getElementById('user-display');
         const authNav = document.getElementById('nav-auth');
         
         if (authManager.isAuthenticated()) {
+            const userEmail = authManager.user?.email || 'Utilisateur';
+            // Injection de la zone utilisateur avec le bouton "Create New Exercise"
+            nav.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-semibold text-slate-700">${userEmail}</span>
+                    <button onclick="router.newExercise()" class="px-4 py-2 bg-[#0f172a] text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition">
+                        Create New Exercise
+                    </button>
+                    <button onclick="authManager.logout()" class="text-sm text-red-500 hover:text-red-700 font-medium">Quitter</button>
+                </div>
+            `;
             nav.classList.remove('hidden');
             nav.classList.add('flex');
             if (tabs) tabs.classList.remove('hidden');
             if (authNav) authNav.classList.add('hidden');
-            if (display) display.textContent = authManager.user?.email || 'Utilisateur';
         } else {
             nav.classList.add('hidden');
             nav.classList.remove('flex');
@@ -113,6 +123,9 @@ class Router {
                 break;
             case 'dashboard':
                 await this.setupDashboardPage();
+                break;
+            case 'new-discussion':
+                this.setupNewDiscussionPage();
                 break;
             case 'exercise':
                 this.setupExercisePage();
@@ -197,41 +210,70 @@ class Router {
         });
     }
 
+    setupNewDiscussionPage() {
+        const form = document.getElementById('newDiscussionForm');
+        if (!form) return;
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const subject = document.getElementById('discussionSubject').value;
+            const question = document.getElementById('initialQuestion').value;
+            const mode = document.getElementById('discussionMode').value;
+
+            // On prépare l'état de l'exercice pour la page de discussion
+            exerciseManager.currentExercise = {
+                problem_statement: `${subject}\n\nQuestion de l'étudiant : ${question}`,
+                mode: mode,
+                isNew: true
+            };
+
+            // Navigation vers la page d'exercice (qui appellera populateCurrentExercise)
+            this.navigate('exercise');
+            
+            // Petit feedback visuel
+            UIManager.showNotification('Initialisation du dialogue...', 'info');
+        });
+    }
+
     async setupDashboardPage() {
         const app = document.getElementById('app');
-        const profile = await authManager.loadProfile();
+        
+        // 0. Récupération des données en amont
         await exerciseManager.loadUserExercises();
+        const profile = await authManager.loadProfile();
         const exercises = exerciseManager.getExercises();
 
         const initials = (profile?.full_name || 'S').charAt(0).toUpperCase();
         const name = profile?.full_name || 'Student';
         const exerciseCount = exercises.length;
 
-        // Injection de la structure complète (Grid + Sidebar) dans le conteneur principal
+        // 1. Injection de la structure fixe (Squelette Grid + Sidebar)
+        // On injecte cela une seule fois pour établir le layout global
         app.innerHTML = `
-            <div class="max-w-7xl mx-auto pt-8 px-0 pb-12">
-                <h1 class="text-2xl font-bold text-slate-900 mb-8 font-serif">Dashboard: Your AI-Generated Practice</h1>
+            <div class="max-w-7xl mx-auto pt-4 px-0 pb-12">
+                <h1 class="text-2xl font-bold text-slate-900 mb-8 font-serif">Dashboard : Votre pratique guidée par l'IA</h1>
                 <div class="dashboard-grid">
                     <!-- Colonne Gauche : Reçoit les exercices -->
                     <div id="dashboardCardsContainer" class="flex flex-col gap-6"></div>
                     
-                    <!-- Colonne Droite : Le panneau Analytics -->
+                    <!-- Colonne Droite : Le volet de statistiques fixe -->
                     <aside class="sidebar-panel">
                         <div class="flex flex-col items-center text-center mb-6">
                             <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full mb-3 flex items-center justify-center text-xl font-bold">${initials}</div>
                             <h3 class="font-bold text-slate-800">${name}</h3>
-                            <span class="text-xs text-slate-400">Standard License</span>
+                            <span class="text-xs text-slate-400">Licence Étudiant Maieutik</span>
                         </div>
                         <div class="border-t border-slate-100 pt-4 mb-6">
-                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Your Learning Stats</h4>
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Statistiques d'apprentissage</h4>
                             <div class="grid grid-cols-3 gap-2 text-center">
-                                <div class="bg-slate-50 p-2 rounded-lg"><strong>${exerciseCount}</strong><p class="text-[10px] text-slate-400">Exercises</p></div>
-                                <div class="bg-slate-50 p-2 rounded-lg"><strong>2</strong><p class="text-[10px] text-slate-400">Completed</p></div>
-                                <div class="bg-slate-50 p-2 rounded-lg"><strong class="text-indigo-600">94%</strong><p class="text-[10px] text-slate-400">Logic</p></div>
+                                <div class="bg-slate-50 p-2 rounded-lg"><strong>${exerciseCount}</strong><p class="text-[10px] text-slate-400 uppercase">Sujets</p></div>
+                                <div class="bg-slate-50 p-2 rounded-lg"><strong>${exerciseCount > 0 ? 1 : 0}</strong><p class="text-[10px] text-slate-400 uppercase">Actifs</p></div>
+                                <div class="bg-slate-50 p-2 rounded-lg"><strong class="text-indigo-600">94%</strong><p class="text-[10px] text-slate-400 uppercase">Logique</p></div>
                             </div>
                         </div>
                         <div class="border-t border-slate-100 pt-4">
-                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Performance Over Time</h4>
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Progression Cognitive</h4>
                             <div style="height: 60px; display: flex; align-items: flex-end; gap: 4px; padding-bottom: 5px;">
                                 <svg viewBox="0 0 100 30" style="width: 100%; height: auto;"><path d="M0,25 Q25,5 50,20 T100,5" fill="none" stroke="#4f46e5" stroke-width="2"/></svg>
                             </div>
@@ -241,19 +283,23 @@ class Router {
             </div>
         `;
 
-        const container = document.getElementById('dashboardCardsContainer');
-
+        // 2. Injection des cartes dynamiques dans le conteneur dédié
+        const cardsContainer = document.getElementById('dashboardCardsContainer');
+        
         if (exercises.length === 0) {
-            container.innerHTML = `
-                <div class="p-8 bg-white rounded-xl border border-gray-200 text-center">
-                    <p class="text-gray-600 mb-4">Vous n'avez pas encore d'exercices résolus</p>
-                    <button onclick="router.newExercise()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition">Résoudre votre premier exercice</button>
+            cardsContainer.innerHTML = `
+                <div class="p-12 bg-white rounded-2xl border border-dashed border-slate-200 text-center">
+                    <p class="text-slate-500 mb-6">Votre journal d'apprentissage est encore vide.</p>
+                    <button onclick="router.newExercise()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all">Initialiser ma première discussion</button>
                 </div>
             `;
         } else {
-            container.innerHTML = exercises.map((ex, i) => ui.createExerciseCard(ex, i)).join('');
-            // Relancer le rendu KaTeX pour les formules dans les cartes injectées
-            UIManager.renderMath(container);
+            // Boucle sur les exercices et injection chirurgicale
+            cardsContainer.innerHTML = exercises.map((ex, i) => ui.createExerciseCard(ex, i)).join('');
+            
+            // 3. Activation de KaTeX sur le conteneur de cartes uniquement
+            // Cela transforme les formules mathématiques en rendu scientifique parfait
+            UIManager.renderMath(cardsContainer);
         }
     }
 
