@@ -35,6 +35,18 @@ class Router {
         this.navigate('exercise');
     }
 
+    async deleteExercise(exerciseId) {
+        if (!confirm('Voulez-vous vraiment supprimer cet exercice ?')) return;
+        try {
+            await exerciseManager.deleteExercise(exerciseId);
+            UIManager.showNotification('Exercice supprimé', 'success');
+            this.setupDashboardPage(); // Rafraîchir le dashboard
+        } catch (error) {
+            console.error(error);
+            UIManager.showNotification('Erreur lors de la suppression', 'error');
+        }
+    }
+
     newExercise() {
         exerciseManager.clearCurrentExercise();
         this.navigate('new-discussion');
@@ -292,67 +304,82 @@ class Router {
 
     async setupDashboardPage() {
         const app = document.getElementById('app');
-        
-        // 0. Récupération des données en amont
         await exerciseManager.loadUserExercises();
-        const profile = await authManager.loadProfile();
         const exercises = exerciseManager.getExercises();
 
-        const initials = (profile?.full_name || 'S').charAt(0).toUpperCase();
-        const name = profile?.full_name || 'Student';
+        // Calcul des stats
         const exerciseCount = exercises.length;
+        const modes = exercises.map(ex => ex.mode);
+        const preferredMode = modes.length > 0 
+            ? modes.sort((a,b) => modes.filter(v => v===a).length - modes.filter(v => v===b).length).pop()
+            : 'N/A';
+        const modeLabels = { guide: 'Maïeutique', solve: 'Résolution', hint: 'Indice', explain: 'Explication', 'N/A': 'Aucun' };
 
-        // 1. Injection de la structure fixe (Squelette Grid + Sidebar)
-        // On injecte cela une seule fois pour établir le layout global
-        app.innerHTML = `
-            <div class="max-w-7xl mx-auto pt-4 px-0 pb-12">
-                <h1 class="text-2xl font-bold text-slate-900 mb-8 font-serif">Dashboard : Votre pratique guidée par l'IA</h1>
-                <div class="dashboard-grid">
-                    <!-- Colonne Gauche : Reçoit les exercices -->
-                    <div id="dashboardCardsContainer" class="flex flex-col gap-6"></div>
-                    
-                    <!-- Colonne Droite : Le volet de statistiques fixe -->
-                    <aside class="sidebar-panel">
-                        <div class="flex flex-col items-center text-center mb-6">
-                            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full mb-3 flex items-center justify-center text-xl font-bold">${initials}</div>
-                            <h3 class="font-bold text-slate-800">${name}</h3>
-                            <span class="text-xs text-slate-400">Licence Étudiant Maieutik</span>
-                        </div>
-                        <div class="border-t border-slate-100 pt-4 mb-6">
-                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Statistiques d'apprentissage</h4>
-                            <div class="grid grid-cols-3 gap-2 text-center">
-                                <div class="bg-slate-50 p-2 rounded-lg"><strong>${exerciseCount}</strong><p class="text-[10px] text-slate-400 uppercase">Sujets</p></div>
-                                <div class="bg-slate-50 p-2 rounded-lg"><strong>${exerciseCount > 0 ? 1 : 0}</strong><p class="text-[10px] text-slate-400 uppercase">Actifs</p></div>
-                                <div class="bg-slate-50 p-2 rounded-lg"><strong class="text-indigo-600">94%</strong><p class="text-[10px] text-slate-400 uppercase">Logique</p></div>
-                            </div>
-                        </div>
-                        <div class="border-t border-slate-100 pt-4">
-                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Progression Cognitive</h4>
-                            <div style="height: 60px; display: flex; align-items: flex-end; gap: 4px; padding-bottom: 5px;">
-                                <svg viewBox="0 0 100 30" style="width: 100%; height: auto;"><path d="M0,25 Q25,5 50,20 T100,5" fill="none" stroke="#4f46e5" stroke-width="2"/></svg>
-                            </div>
-                        </div>
-                    </aside>
-                </div>
+        // Rendu du squelette depuis le template index.html
+        await this.loadPage('dashboard');
+
+        const statsGrid = document.getElementById('statsGrid');
+        const cardsContainer = document.getElementById('dashboardCardsContainer');
+
+        // Injection des stats
+        statsGrid.innerHTML = `
+            <div class="bg-gray-50 border border-gray-200 p-6 rounded-2xl">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Mode Préféré</p>
+                <p class="text-2xl font-bold text-[#111827]">${modeLabels[preferredMode]}</p>
+            </div>
+            <div class="bg-gray-50 border border-gray-200 p-6 rounded-2xl">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Exercices Complétés</p>
+                <p class="text-2xl font-bold text-[#111827]">${exerciseCount}</p>
+            </div>
+            <div class="bg-gray-50 border border-gray-200 p-6 rounded-2xl">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Série de Jours</p>
+                <p class="text-2xl font-bold text-[#111827]">12 jours</p>
             </div>
         `;
 
-        // 2. Injection des cartes dynamiques dans le conteneur dédié
+        this.renderExerciseGrid(exercises);
+
+        // Setup des filtres
+        const filterButtons = document.querySelectorAll('#subjectFilters button');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter;
+                filterButtons.forEach(b => {
+                    b.classList.remove('bg-gray-900', 'text-white');
+                    b.classList.add('bg-gray-100', 'text-gray-600');
+                });
+                btn.classList.add('bg-gray-900', 'text-white');
+                btn.classList.remove('bg-gray-100', 'text-gray-600');
+
+                const filtered = filter === 'all' 
+                    ? exercises 
+                    : exercises.filter(ex => {
+                        const text = ex.problem_statement || ex.problemStatement || "";
+                        const matiere = typeof ui !== 'undefined' && ui.detecterMatiere 
+                            ? ui.detecterMatiere(text) 
+                            : UIManager.detecterMatiere(text);
+                        return matiere.nom === filter;
+                      });
+                
+                this.renderExerciseGrid(filtered);
+            });
+        });
+    }
+
+    renderExerciseGrid(exercises) {
         const cardsContainer = document.getElementById('dashboardCardsContainer');
-        
-        if (exercises.length === 0) {
+        if (!cardsContainer) return;
+
+        if (!exercises || exercises.length === 0) {
+            cardsContainer.className = "col-span-full";
             cardsContainer.innerHTML = `
-                <div class="p-12 bg-white rounded-2xl border border-dashed border-slate-200 text-center">
+                <div class="p-12 bg-white rounded-2xl border border-dashed border-gray-200 text-center w-full my-4">
                     <p class="text-slate-500 mb-6">Votre journal d'apprentissage est encore vide.</p>
                     <button onclick="router.newExercise()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all">Initialiser ma première discussion</button>
                 </div>
             `;
         } else {
-            // Boucle sur les exercices et injection chirurgicale
             cardsContainer.innerHTML = exercises.map((ex, i) => ui.createExerciseCard(ex, i)).join('');
-            
-            // 3. Activation de KaTeX sur le conteneur de cartes uniquement
-            // Cela transforme les formules mathématiques en rendu scientifique parfait
             UIManager.renderMath(cardsContainer);
         }
     }

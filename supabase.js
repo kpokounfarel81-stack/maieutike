@@ -290,6 +290,20 @@ class SupabaseClient {
 
         return data || null;
     }
+
+    async deleteExercise(exerciseId) {
+        await this.ensureReady();
+
+        const { error } = await this.supabase
+            .from('exercises')
+            .delete()
+            .eq('id', exerciseId);
+
+        if (error) {
+            throw error;
+        }
+        return true;
+    }
 }
 
 /**

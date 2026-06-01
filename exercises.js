@@ -56,6 +56,12 @@ class ExerciseManager {
         return result;
     }
 
+    async deleteExercise(exerciseId) {
+        await supabase.deleteExercise(exerciseId);
+        this.exercises = this.exercises.filter(ex => ex.id !== exerciseId);
+        return true;
+    }
+
     async loadExercise(exerciseId) {
         this.currentExercise = await supabase.getExercise(exerciseId);
         return this.currentExercise;
