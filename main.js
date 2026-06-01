@@ -74,14 +74,21 @@ class Router {
 
     updateNavbar() {
         const nav = document.getElementById('nav-user');
+        const tabs = document.getElementById('nav-tabs');
         const display = document.getElementById('user-display');
+        const authNav = document.getElementById('nav-auth');
+        
         if (authManager.isAuthenticated()) {
             nav.classList.remove('hidden');
             nav.classList.add('flex');
-            display.textContent = authManager.user?.email || 'Utilisateur';
+            if (tabs) tabs.classList.remove('hidden');
+            if (authNav) authNav.classList.add('hidden');
+            if (display) display.textContent = authManager.user?.email || 'Utilisateur';
         } else {
             nav.classList.add('hidden');
             nav.classList.remove('flex');
+            if (tabs) tabs.classList.add('hidden');
+            if (authNav) authNav.classList.remove('hidden');
         }
     }
 
@@ -195,6 +202,14 @@ class Router {
         const exercises = exerciseManager.getExercises();
         const exercisesList = document.getElementById('exercisesList');
 
+        // Mise à jour de la sidebar
+        const profile = await authManager.loadProfile();
+        if (document.getElementById('sidebar-name')) {
+            document.getElementById('sidebar-name').textContent = profile?.full_name || 'Student';
+            document.getElementById('sidebar-initials').textContent = (profile?.full_name || 'S').charAt(0);
+            document.getElementById('stat-exercises').textContent = exercises.length;
+        }
+
         if (exercises.length === 0) {
             exercisesList.innerHTML = `
                 <div class="p-8 bg-white rounded-xl border border-gray-200 text-center">
@@ -206,7 +221,7 @@ class Router {
             `;
         } else {
             exercisesList.innerHTML = exercises
-                .map(exercise => ui.createExerciseCard(exercise))
+                .map((exercise, index) => ui.createExerciseCard(exercise, index))
                 .join('');
         }
     }

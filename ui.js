@@ -84,25 +84,38 @@ class UIManager {
     /**
      * Créer une carte d'exercice
      */
-    static createExerciseCard(exercise) {
+    static createExerciseCard(exercise, index = 0) {
         const problemPreview = this.truncate(exercise.problem_statement, 100);
-        const solutionPreview = this.truncate(exercise.solution_content, 150);
         const date = this.formatDate(exercise.created_at);
+        const isFocus = index === 0;
 
         return `
-            <div class="p-6 card-premium transition">
-                <div class="mb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">Problème</h3>
-                    <p class="text-sm text-gray-600">${problemPreview}</p>
+            <div class="p-6 card-row ${isFocus ? 'card-focus' : ''} flex items-center justify-between gap-6 mb-4">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase rounded tracking-wider">
+                            Mathematics
+                        </span>
+                        <span class="text-xs text-slate-400">${date}</span>
+                    </div>
+                    
+                    ${isFocus ? `
+                        <div class="bubble-frame mb-3 flex gap-4 items-center">
+                            <div class="w-10 h-10 flex-shrink-0 bg-white rounded-full border border-slate-200 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                            </div>
+                            <p class="text-sm font-medium text-slate-700 leading-relaxed">${problemPreview}</p>
+                        </div>
+                    ` : `
+                        <h3 class="text-base font-bold text-slate-900 mb-1">Concept Mastery</h3>
+                        <p class="text-sm text-slate-500 line-clamp-1">${problemPreview}</p>
+                    `}
                 </div>
-                <div class="mb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">Solution</h3>
-                    <p class="text-sm text-gray-600">${solutionPreview}</p>
-                </div>
-                <div class="flex justify-between items-center text-xs text-gray-500">
-                    <span>${date}</span>
-                    <button onclick="router.openExercise('${exercise.id}')" class="text-blue-600 hover:underline font-semibold">
-                        Voir
+                
+                <div class="flex-shrink-0">
+                    <button onclick="router.openExercise('${exercise.id}')" 
+                        class="${isFocus ? 'btn-blue' : 'px-5 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition'}">
+                        ${isFocus ? 'Start Practice' : 'Review Results'}
                     </button>
                 </div>
             </div>
