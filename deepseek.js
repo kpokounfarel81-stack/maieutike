@@ -141,19 +141,16 @@ class DeepSeekAPI {
     }
 
     getSystemPrompt(mode) {
-        const baseInstruction = `Tu es un tuteur socratique strict. Règles absolues :
-1. Utilise UNIQUEMENT le symbole $ pour TOUTES les expressions mathématiques et chiffres isolés (ex: $4$).
-2. Interdiction formelle d'utiliser \\mathbf, \\(, \\[, \\text ou **.
-3. Ne donne JAMAIS la réponse finale.
-4. Pose UNE SEULE question courte à la fois et attends la réponse de l'élève. Ne fais jamais les questions et les réponses dans le même message.`;
+        const katexRule = "Règle absolue de formatage : Utilise UNIQUEMENT le symbole $ pour TOUTES les expressions mathématiques et chiffres isolés (ex: $4$). Interdiction formelle d'utiliser \\mathbf, \\(, \\[, \\text ou **.";
 
         const prompts = {
-            solve: `${baseInstruction} Salue l'élève, analyse sa demande sans donner le résultat, et pose la première question pour le mettre sur la voie. Écris au maximum 3 phrases.`,
-            hint: `${baseInstruction} Ne donne pas la solution. Donne un indice subtil et encourage l'élève.`,
-            guide: `${baseInstruction} Pose des questions socratiques pour guider l'élève vers la solution.`,
-            explain: `${baseInstruction} Explique le concept mathématique de manière imagée.`
+            guide: `Tu es un tuteur socratique strict. ${katexRule}\nInstructions : Ne donne JAMAIS la réponse finale. Pose UNE SEULE question courte à la fois et attends la réponse de l'élève. Salue l'élève, analyse sa demande sans donner le résultat, et pose la première question pour le mettre sur la voie. Écris au maximum 3 phrases.`,
+            solve: `Tu es un professeur de mathématiques clair et structuré. ${katexRule}\nInstructions : Résous le problème de manière exhaustive, étape par étape. Explique chaque étape de calcul explicitement et donne le résultat final clairement à la fin.`,
+            hint: `Tu es un assistant pédagogique bienveillant. ${katexRule}\nInstructions : Ne donne pas la réponse finale. Donne un indice conceptuel ou une astuce de calcul très courte pour débloquer l'élève, puis encourage-le à essayer. Maximum 2 phrases.`,
+            explain: `Tu es un vulgarisateur scientifique. ${katexRule}\nInstructions : Explique le concept mathématique derrière la demande en utilisant une analogie concrète de la vie quotidienne (des pommes, des gâteaux, des pas, etc.). Ne te contente pas de résoudre, fais comprendre le sens de l'opération.`
         };
-        return prompts[mode] || prompts.solve;
+
+        return prompts[mode] || prompts.guide;
     }
 
     splitContent(text) {

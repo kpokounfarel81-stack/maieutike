@@ -220,12 +220,13 @@ class Router {
                     <form id="newExerciseForm" class="space-y-6">
                         <div class="flex justify-between items-center">
                             <h2 class="text-2xl font-bold text-slate-900 font-serif">Énoncé de l'exercice</h2>
-                            <div class="flex items-center gap-3">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mode :</label>
-                                <select id="aiMode" class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                                    <option value="solve" selected>Résolution complète</option>
-                                    <option value="hint">Indice</option>
-                                    <option value="guide">Guidage</option>
+                            <div class="mode-selector-container">
+                                <label for="ai-mode" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Mode :</label>
+                                <select id="ai-mode" class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                                    <option value="guide" selected>🧠 Guide Maïeutique</option>
+                                    <option value="solve">📝 Résolution Complète</option>
+                                    <option value="hint">💡 Indice Progressif</option>
+                                    <option value="explain">🎨 Explication Imagée</option>
                                 </select>
                             </div>
                         </div>
@@ -279,7 +280,7 @@ class Router {
             exerciseManager.currentExercise = {
                 problem_statement: document.getElementById('exerciseInput').value.trim(),
                 attempt: document.getElementById('attemptInput').value.trim(),
-                mode: document.getElementById('aiMode').value,
+                mode: document.getElementById('ai-mode').value,
                 isNew: true,
                 autoStart: true // Flag pour lancer l'IA automatiquement au chargement de la page suivante
             };
@@ -388,7 +389,7 @@ class Router {
 
             const problemStatement = document.getElementById('exerciseInput').value.trim();
             const attempt = document.getElementById('attemptInput').value.trim();
-            const mode = document.getElementById('aiMode').value;
+            const mode = document.getElementById('ai-mode').value;
             const files = Array.from(fileInput.files || []);
 
             if (!problemStatement && files.length === 0) {
@@ -413,13 +414,13 @@ class Router {
                     (reasoning, fromCache) => {
                         if (fromCache) cacheNotice.classList.remove('hidden');
                         reasoningContent.innerHTML = UIManager.renderMarkdown(reasoning || 'Demarche indisponible');
-                        UIManager.renderMath(reasoningContent);
+                        if (window.MaieutikTextEngine) MaieutikTextEngine.process(reasoningContent);
                         reasoningContent.scrollTop = reasoningContent.scrollHeight;
                     },
                     (solution, fromCache) => {
                         if (fromCache) cacheNotice.classList.remove('hidden');
                         solutionContent.innerHTML = UIManager.renderMarkdown(solution || 'Solution indisponible');
-                        UIManager.renderMath(solutionContent);
+                        if (window.MaieutikTextEngine) MaieutikTextEngine.process(solutionContent);
                         solutionContent.scrollTop = solutionContent.scrollHeight;
                     },
                     { mode, attempt, attachments }
@@ -444,7 +445,7 @@ class Router {
         if (!exercise) return;
 
         const input = document.getElementById('exerciseInput');
-        const mode = document.getElementById('aiMode');
+        const mode = document.getElementById('ai-mode');
         const attempt = document.getElementById('attemptInput');
         const reasoningSection = document.getElementById('reasoningSection');
         const solutionSection = document.getElementById('solutionSection');
@@ -459,8 +460,10 @@ class Router {
         solutionSection.classList.remove('hidden');
         reasoningContent.innerHTML = UIManager.renderMarkdown(exercise.reasoning_content || 'Demarche indisponible');
         solutionContent.innerHTML = UIManager.renderMarkdown(exercise.solution_content || 'Solution indisponible');
-        UIManager.renderMath(reasoningContent);
-        UIManager.renderMath(solutionContent);
+        if (window.MaieutikTextEngine) {
+            MaieutikTextEngine.process(reasoningContent);
+            MaieutikTextEngine.process(solutionContent);
+        }
     }
 
     async readAttachments(files) {

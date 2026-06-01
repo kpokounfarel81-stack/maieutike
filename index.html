@@ -353,15 +353,16 @@
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-2xl border shadow-sm">
                 <form id="exerciseForm" class="space-y-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="font-bold">Énoncé de l'exercice</label>
-                        <select id="aiMode" class="text-sm border rounded-lg p-1">
-                            <option value="solve">Résolution complète</option>
-                            <option value="hint">Indices progressifs</option>
-                            <option value="guide">Guide maïeutique</option>
-                            <option value="explain">Expliquer autrement</option>
+                    <div class="mode-selector-container" style="margin-bottom: 10px;">
+                        <label for="ai-mode" style="font-weight: bold; margin-right: 5px;">Mode :</label>
+                        <select id="ai-mode" style="padding: 5px; border-radius: 4px;">
+                            <option value="guide" selected>🧠 Guide Maïeutique</option>
+                            <option value="solve">📝 Résolution Complète</option>
+                            <option value="hint">💡 Indice Progressif</option>
+                            <option value="explain">🎨 Explication Imagée</option>
                         </select>
                     </div>
+                    <label class="font-bold">Énoncé de l'exercice</label>
                     <textarea id="exerciseInput" class="w-full p-4 border rounded-xl h-32" placeholder="Collez votre énoncé ici..."></textarea>
                     
                     <div class="space-y-2">
