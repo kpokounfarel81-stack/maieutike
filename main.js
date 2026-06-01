@@ -198,31 +198,62 @@ class Router {
     }
 
     async setupDashboardPage() {
+        const app = document.getElementById('app');
+        const profile = await authManager.loadProfile();
         await exerciseManager.loadUserExercises();
         const exercises = exerciseManager.getExercises();
-        const exercisesList = document.getElementById('exercisesList');
 
-        // Mise à jour de la sidebar
-        const profile = await authManager.loadProfile();
-        if (document.getElementById('sidebar-name')) {
-            document.getElementById('sidebar-name').textContent = profile?.full_name || 'Student';
-            document.getElementById('sidebar-initials').textContent = (profile?.full_name || 'S').charAt(0);
-            document.getElementById('stat-exercises').textContent = exercises.length;
-        }
+        const initials = (profile?.full_name || 'S').charAt(0).toUpperCase();
+        const name = profile?.full_name || 'Student';
+        const exerciseCount = exercises.length;
+
+        // Injection de la structure complète (Grid + Sidebar) dans le conteneur principal
+        app.innerHTML = `
+            <div class="max-w-7xl mx-auto pt-8 px-0 pb-12">
+                <h1 class="text-2xl font-bold text-slate-900 mb-8 font-serif">Dashboard: Your AI-Generated Practice</h1>
+                <div class="dashboard-grid">
+                    <!-- Colonne Gauche : Reçoit les exercices -->
+                    <div id="dashboardCardsContainer" class="flex flex-col gap-6"></div>
+                    
+                    <!-- Colonne Droite : Le panneau Analytics -->
+                    <aside class="sidebar-panel">
+                        <div class="flex flex-col items-center text-center mb-6">
+                            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full mb-3 flex items-center justify-center text-xl font-bold">${initials}</div>
+                            <h3 class="font-bold text-slate-800">${name}</h3>
+                            <span class="text-xs text-slate-400">Standard License</span>
+                        </div>
+                        <div class="border-t border-slate-100 pt-4 mb-6">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Your Learning Stats</h4>
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="bg-slate-50 p-2 rounded-lg"><strong>${exerciseCount}</strong><p class="text-[10px] text-slate-400">Exercises</p></div>
+                                <div class="bg-slate-50 p-2 rounded-lg"><strong>2</strong><p class="text-[10px] text-slate-400">Completed</p></div>
+                                <div class="bg-slate-50 p-2 rounded-lg"><strong class="text-indigo-600">94%</strong><p class="text-[10px] text-slate-400">Logic</p></div>
+                            </div>
+                        </div>
+                        <div class="border-t border-slate-100 pt-4">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Performance Over Time</h4>
+                            <div style="height: 60px; display: flex; align-items: flex-end; gap: 4px; padding-bottom: 5px;">
+                                <svg viewBox="0 0 100 30" style="width: 100%; height: auto;"><path d="M0,25 Q25,5 50,20 T100,5" fill="none" stroke="#4f46e5" stroke-width="2"/></svg>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        `;
+
+        const container = document.getElementById('dashboardCardsContainer');
 
         if (exercises.length === 0) {
-            exercisesList.innerHTML = `
+            container.innerHTML = `
                 <div class="p-8 bg-white rounded-xl border border-gray-200 text-center">
-                    <p class="text-gray-600 mb-4">Vous n'avez pas encore d'exercices resolus</p>
-                    <button onclick="router.newExercise()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition">
-                        Resoudre votre premier exercice
-                    </button>
+                    <p class="text-gray-600 mb-4">Vous n'avez pas encore d'exercices résolus</p>
+                    <button onclick="router.newExercise()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition">Résoudre votre premier exercice</button>
                 </div>
             `;
         } else {
-            exercisesList.innerHTML = exercises
-                .map((exercise, index) => ui.createExerciseCard(exercise, index))
-                .join('');
+            container.innerHTML = exercises.map((ex, i) => ui.createExerciseCard(ex, i)).join('');
+            // Relancer le rendu KaTeX pour les formules dans les cartes injectées
+            UIManager.renderMath(container);
         }
     }
 
