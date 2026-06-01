@@ -90,7 +90,7 @@ class UIManager {
         const date = this.formatDate(exercise.created_at);
 
         return `
-            <div class="p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition border border-gray-200">
+            <div class="p-6 card-premium transition">
                 <div class="mb-4">
                     <h3 class="font-semibold text-gray-900 mb-2">Problème</h3>
                     <p class="text-sm text-gray-600">${problemPreview}</p>
