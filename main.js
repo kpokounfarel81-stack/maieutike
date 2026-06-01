@@ -305,7 +305,8 @@ class Router {
     async setupDashboardPage() {
         const app = document.getElementById('app');
         await exerciseManager.loadUserExercises();
-        const exercises = exerciseManager.getExercises();
+        const exercises = exerciseManager.getExercises() || [];
+        console.log('Exercices récupérés depuis ExerciseManager:', exercises);
 
         // Calcul des stats
         const exerciseCount = exercises.length;
