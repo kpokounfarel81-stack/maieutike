@@ -12,21 +12,74 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+
+    <style>
+        /* Optimisation du rendu pour éviter le flash de contenu non formaté */
+        .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
+    </style>
+</head>
+<body class="bg-slate-50 font-[Inter] text-slate-900">
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            renderMathInElement(document.body, {
+        /**
+         * Moteur de nettoyage et de rendu automatique Maieutik
+         * Gère les corruptions de texte (OCR/Copy-paste) et le rendu LaTeX
+         */
+        const MaieutikTextEngine = {
+            config: {
                 delimiters: [
                     {left: '$$', right: '$$', display: true},
                     {left: '$', right: '$', display: false},
                     {left: '\\(', right: '\\)', display: false},
                     {left: '\\[', right: '\\]', display: true}
                 ],
-                throwOnError : false
+                throwOnError: false
+            },
+
+            // Nettoie les nœuds textuels des caractères parasites
+            sanitize(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    let text = node.textContent;
+                    // 1. Recollage des lettres espacées (ex: "c o ˆ t e ˊ" -> "côté")
+                    // On cible les séquences de lettres isolées suivies d'espaces
+                    text = text.replace(/(?:(?<=\s|^)[a-zA-ZÀ-ÿ]\s){2,}[a-zA-ZÀ-ÿ]/g, m => m.replace(/\s/g, ''));
+                    
+                    // 2. Correction des accents décomposés (Unicode combining marks)
+                    text = text.normalize('NFC');
+
+                    // 3. Réparation des commandes LaTeX mal espacées (ex: "\ frac" -> "\frac")
+                    text = text.replace(/\\\s+([a-z]+)/gi, '\\$1');
+
+                    if (node.textContent !== text) node.textContent = text;
+                } else {
+                    node.childNodes.forEach(child => this.sanitize(child));
+                }
+            },
+
+            // Applique le nettoyage et KaTeX sur un élément
+            process(element) {
+                if (!element || element.classList?.contains('katex')) return;
+                this.sanitize(element);
+                if (window.renderMathInElement) {
+                    renderMathInElement(element, this.config);
+                }
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Observation automatique du conteneur #app pour traiter le contenu dynamique
+            const target = document.getElementById('app');
+            const observer = new MutationObserver(mutations => {
+                mutations.forEach(m => m.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) MaieutikTextEngine.process(node);
+                }));
             });
+            observer.observe(target, { childList: true, subtree: true });
+            
+            // Premier passage sur le body pour les éléments statiques
+            MaieutikTextEngine.process(document.body);
         });
     </script>
-</head>
-<body class="bg-slate-50 font-[Inter] text-slate-900">
+
     <div id="loadingApp" class="fixed inset-0 bg-white flex items-center justify-center z-[100]">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
     </div>
