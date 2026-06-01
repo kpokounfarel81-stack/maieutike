@@ -211,28 +211,81 @@ class Router {
     }
 
     setupNewDiscussionPage() {
-        const form = document.getElementById('newDiscussionForm');
-        if (!form) return;
+        const app = document.getElementById('app');
+        
+        // Injection de la nouvelle interface d'aide aux devoirs
+        app.innerHTML = `
+            <div class="max-w-4xl mx-auto pt-8 px-6 animate-slide-up">
+                <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-xl space-y-8">
+                    <form id="newExerciseForm" class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold text-slate-900 font-serif">Énoncé de l'exercice</h2>
+                            <div class="flex items-center gap-3">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mode :</label>
+                                <select id="aiMode" class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                                    <option value="solve" selected>Résolution complète</option>
+                                    <option value="hint">Indice</option>
+                                    <option value="guide">Guidage</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <textarea id="exerciseInput" required 
+                            class="w-full p-6 bg-slate-50 border border-slate-200 rounded-2xl h-48 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300 text-lg" 
+                            placeholder="Collez votre énoncé ici..."></textarea>
+                        
+                        <div class="space-y-3">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Votre tentative (optionnel)</label>
+                            <textarea id="attemptInput" 
+                                class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl h-28 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300 text-sm" 
+                                placeholder="Ce que vous avez déjà essayé..."></textarea>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <div class="flex items-center gap-4">
+                                <input type="file" id="exerciseFiles" multiple class="hidden" accept="image/*,application/pdf">
+                                <button type="button" onclick="document.getElementById('exerciseFiles').click()" 
+                                    class="flex items-center gap-2 text-sm text-indigo-600 font-bold hover:text-indigo-800 transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                    Ajouter image/PDF
+                                </button>
+                                <span id="fileList" class="text-xs text-slate-400 font-medium"></span>
+                            </div>
+                        </div>
+
+                        <div id="exerciseError" class="hidden text-red-500 text-sm p-3 bg-red-50 rounded-lg"></div>
+
+                        <button type="submit" id="solveBtn" 
+                            class="w-full py-5 bg-[#4f46e5] text-white rounded-2xl font-bold uppercase tracking-[0.2em] hover:bg-[#4338ca] hover:shadow-2xl transition-all transform active:scale-[0.98] shadow-indigo-200/50">
+                            Résoudre avec l'IA
+                        </button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        const form = document.getElementById('newExerciseForm');
+        const fileInput = document.getElementById('exerciseFiles');
+        const fileList = document.getElementById('fileList');
+
+        fileInput.addEventListener('change', () => {
+            const files = Array.from(fileInput.files || []);
+            fileList.textContent = files.length ? `${files.length} fichier(s) sélectionné(s)` : '';
+        });
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            const subject = document.getElementById('discussionSubject').value;
-            const question = document.getElementById('initialQuestion').value;
-            const mode = document.getElementById('discussionMode').value;
 
-            // On prépare l'état de l'exercice pour la page de discussion
             exerciseManager.currentExercise = {
-                problem_statement: `${subject}\n\nQuestion de l'étudiant : ${question}`,
-                mode: mode,
-                isNew: true
+                problem_statement: document.getElementById('exerciseInput').value.trim(),
+                attempt: document.getElementById('attemptInput').value.trim(),
+                mode: document.getElementById('aiMode').value,
+                isNew: true,
+                autoStart: true // Flag pour lancer l'IA automatiquement au chargement de la page suivante
             };
 
-            // Navigation vers la page d'exercice (qui appellera populateCurrentExercise)
             this.navigate('exercise');
-            
-            // Petit feedback visuel
-            UIManager.showNotification('Initialisation du dialogue...', 'info');
+            UIManager.showNotification('Initialisation de l\'analyse...', 'info');
         });
     }
 
@@ -317,6 +370,12 @@ class Router {
 
         this.populateCurrentExercise();
 
+        // Lancement automatique si on vient de la page "new-discussion"
+        if (exerciseManager.currentExercise?.autoStart) {
+            delete exerciseManager.currentExercise.autoStart;
+            setTimeout(() => form.dispatchEvent(new Event('submit')), 100);
+        }
+
         fileInput.addEventListener('change', () => {
             const files = Array.from(fileInput.files || []);
             fileList.textContent = files.length
@@ -385,12 +444,17 @@ class Router {
         if (!exercise) return;
 
         const input = document.getElementById('exerciseInput');
+        const mode = document.getElementById('aiMode');
+        const attempt = document.getElementById('attemptInput');
         const reasoningSection = document.getElementById('reasoningSection');
         const solutionSection = document.getElementById('solutionSection');
         const reasoningContent = document.getElementById('reasoningContent');
         const solutionContent = document.getElementById('solutionContent');
 
-        input.value = exercise.problem_statement || '';
+        if (input) input.value = exercise.problem_statement || '';
+        if (mode) mode.value = exercise.mode || 'solve';
+        if (attempt) attempt.value = exercise.attempt || '';
+        
         reasoningSection.classList.remove('hidden');
         solutionSection.classList.remove('hidden');
         reasoningContent.innerHTML = UIManager.renderMarkdown(exercise.reasoning_content || 'Demarche indisponible');
