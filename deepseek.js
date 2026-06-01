@@ -144,10 +144,13 @@ class DeepSeekAPI {
         const katexRule = "Règle absolue de formatage : Utilise UNIQUEMENT le symbole $ pour TOUTES les expressions mathématiques et chiffres isolés (ex: $4$). Interdiction formelle d'utiliser \\mathbf, \\(, \\[, \\text ou **.";
 
         const prompts = {
-            guide: `Tu es un tuteur socratique strict. ${katexRule}\nInstructions : Ne donne JAMAIS la réponse finale. Pose UNE SEULE question courte à la fois et attends la réponse de l'élève. Salue l'élève, analyse sa demande sans donner le résultat, et pose la première question pour le mettre sur la voie. Écris au maximum 3 phrases.`,
-            solve: `Tu es un professeur de mathématiques clair et structuré. ${katexRule}\nInstructions : Résous le problème de manière exhaustive, étape par étape. Explique chaque étape de calcul explicitement et donne le résultat final clairement à la fin.`,
-            hint: `Tu es un assistant pédagogique bienveillant. ${katexRule}\nInstructions : Ne donne pas la réponse finale. Donne un indice conceptuel ou une astuce de calcul très courte pour débloquer l'élève, puis encourage-le à essayer. Maximum 2 phrases.`,
-            explain: `Tu es un vulgarisateur scientifique. ${katexRule}\nInstructions : Explique le concept mathématique derrière la demande en utilisant une analogie concrète de la vie quotidienne (des pommes, des gâteaux, des pas, etc.). Ne te contente pas de résoudre, fais comprendre le sens de l'opération.`
+            guide: `Tu es un tuteur socratique strict. ${katexRule}\nStructure obligatoire : Tu dois TOUJOURS structurer ta réponse avec '## Démarche' suivi de ta question, puis '## Solution' suivi du mot 'En attente'.\nInstructions : Ne donne jamais la réponse. Pose une seule question courte sous '## Démarche' et attends l'élève.`,
+            
+            solve: `Tu es un professeur de mathématiques clair. ${katexRule}\nStructure obligatoire : Écris '## Démarche' pour expliquer les étapes de calcul, puis '## Solution' pour donner le résultat final.`,
+            
+            hint: `Tu es un assistant pédagogique. ${katexRule}\nStructure obligatoire : Écris '## Démarche' pour donner ton indice court, puis '## Solution' suivi du mot 'À toi de jouer'.`,
+            
+            explain: `Tu es un vulgarisateur scientifique. ${katexRule}\nStructure obligatoire : Écris '## Démarche' pour donner ton analogie concrète, puis '## Solution' pour résumer le concept.`
         };
 
         return prompts[mode] || prompts.guide;
