@@ -316,9 +316,6 @@ class Router {
             : 'N/A';
         const modeLabels = { guide: 'Maïeutique', solve: 'Résolution', hint: 'Indice', explain: 'Explication', 'N/A': 'Aucun' };
 
-        // Rendu du squelette depuis le template index.html
-        await this.loadPage('dashboard');
-
         const statsGrid = document.getElementById('statsGrid');
         const cardsContainer = document.getElementById('dashboardCardsContainer');
 
@@ -369,19 +366,29 @@ class Router {
 
     renderExerciseGrid(exercises) {
         const cardsContainer = document.getElementById('dashboardCardsContainer');
-        if (!cardsContainer) return;
+        if (!cardsContainer) {
+            console.error("Conteneur #dashboardCardsContainer introuvable dans le DOM.");
+            return;
+        }
 
-        if (!exercises || exercises.length === 0) {
-            cardsContainer.className = "col-span-full";
-            cardsContainer.innerHTML = `
-                <div class="p-12 bg-white rounded-2xl border border-dashed border-gray-200 text-center w-full my-4">
-                    <p class="text-slate-500 mb-6">Votre journal d'apprentissage est encore vide.</p>
-                    <button onclick="router.newExercise()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all">Initialiser ma première discussion</button>
-                </div>
-            `;
-        } else {
-            cardsContainer.innerHTML = exercises.map((ex, i) => ui.createExerciseCard(ex, i)).join('');
-            UIManager.renderMath(cardsContainer);
+        try {
+            if (!exercises || exercises.length === 0) {
+                cardsContainer.className = "col-span-full";
+                cardsContainer.innerHTML = `
+                    <div class="p-12 bg-white rounded-2xl border border-dashed border-gray-200 text-center w-full my-4">
+                        <p class="text-slate-500 mb-6">Votre journal d'apprentissage est encore vide.</p>
+                        <button onclick="router.newExercise()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all">Initialiser ma première discussion</button>
+                    </div>
+                `;
+            } else {
+                // S'assurer que la classe grid est bien présente si on revient d'un état vide
+                cardsContainer.className = "grid grid-cols-1 md:grid-cols-3 gap-6 mt-6";
+                cardsContainer.innerHTML = exercises.map((ex, i) => ui.createExerciseCard(ex, i)).join('');
+                UIManager.renderMath(cardsContainer);
+            }
+        } catch (error) {
+            console.error("Erreur lors de l'injection des cartes d'exercices:", error);
+            cardsContainer.innerHTML = `<div class="col-span-full p-4 bg-red-50 text-red-600 rounded-lg">Erreur d'affichage : ${error.message}</div>`;
         }
     }
 
