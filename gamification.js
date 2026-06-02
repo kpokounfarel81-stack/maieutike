@@ -132,6 +132,11 @@ const initDashboardInteractions = () => {
  * 3. Fonction principale de rendu
  */
 const renderDashboard = () => {
+    const hash = window.location.hash;
+    if (hash !== '#dashboard') {
+        return; // Arrêt strict si on n'est pas explicitement sur l'onglet tableau de bord
+    }
+
     console.log("[Maieutik-Gamification] Début officiel du rendu visuel...");
 
     // 1. Ciblage du conteneur d'affichage de l'application
