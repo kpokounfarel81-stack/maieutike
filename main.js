@@ -312,77 +312,13 @@ class Router {
         });
     }
 
-    async setupDashboardPage() {
-        const app = document.getElementById('app');
-        await exerciseManager.loadUserExercises();
-        const exercises = exerciseManager.getExercises() || [];
-        console.log('Exercices récupérés depuis ExerciseManager:', exercises);
-
-        // Calcul des stats
-        const exerciseCount = exercises.length;
-        const modes = exercises.map(ex => ex.mode);
-        const preferredMode = modes.length > 0 
-            ? modes.sort((a,b) => modes.filter(v => v===a).length - modes.filter(v => v===b).length).pop()
-            : 'N/A';
-        const modeLabels = { guide: 'Maïeutique', solve: 'Résolution', hint: 'Indice', explain: 'Explication', 'N/A': 'Aucun' };
-
-        // Calcul de la Gamification (XP)
-        const xpData = ui.calculateLevel(exerciseCount);
-
-        const statsGrid = document.getElementById('statsGrid');
-        const cardsContainer = document.getElementById('dashboardCardsContainer');
-
-        // Injection des stats
-        statsGrid.innerHTML = `
-            <div class="bg-gray-50 border border-gray-200 p-6 rounded-2xl">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Mode Préféré</p>
-                <p class="text-2xl font-bold text-[#111827]">${modeLabels[preferredMode]}</p>
-            </div>
-            <div class="bg-gray-50 border border-gray-200 p-6 rounded-2xl">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Exercices Complétés</p>
-                <p class="text-2xl font-bold text-[#111827]">${exerciseCount}</p>
-            </div>
-            <div class="bg-gray-50 border border-gray-200 p-6 rounded-2xl flex flex-col justify-between">
-                <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">⭐ Niveau ${xpData.level}</p>
-                    <p class="text-2xl font-bold text-[#111827]">XP global : ${xpData.totalXp} pts</p>
-                </div>
-                <div class="mt-4">
-                    <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-                        <div class="bg-yellow-500 h-full transition-all duration-1000" style="width: ${xpData.progressPercent}%"></div>
-                    </div>
-                    <p class="text-[9px] font-bold text-gray-400 uppercase mt-1 text-right">${xpData.progressPercent}% vers le niveau ${xpData.level + 1}</p>
-                </div>
-            </div>
-        `;
-
-        this.renderExerciseGrid(exercises);
-
-        // Setup des filtres
-        const filterButtons = document.querySelectorAll('#subjectFilters button');
-        filterButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const filter = btn.dataset.filter;
-                filterButtons.forEach(b => {
-                    b.classList.remove('bg-gray-900', 'text-white');
-                    b.classList.add('bg-gray-100', 'text-gray-600');
-                });
-                btn.classList.add('bg-gray-900', 'text-white');
-                btn.classList.remove('bg-gray-100', 'text-gray-600');
-
-                const filtered = filter === 'all' 
-                    ? exercises 
-                    : exercises.filter(ex => {
-                        const text = ex.problem_statement || ex.problemStatement || "";
-                        const matiere = typeof ui !== 'undefined' && ui.detecterMatiere 
-                            ? ui.detecterMatiere(text) 
-                            : UIManager.detecterMatiere(text);
-                        return matiere.nom === filter;
-                      });
-                
-                this.renderExerciseGrid(filtered);
-            });
-        });
+    setupDashboardPage() {
+        console.log("[Main] Passage de relais au module de gamification...");
+        if (window.MaieutikGamification) {
+            window.MaieutikGamification.renderDashboard();
+        } else {
+            console.error("[Main] Le module MaieutikGamification est introuvable au moment du rendu.");
+        }
     }
 
     renderExerciseGrid(exercises) {
