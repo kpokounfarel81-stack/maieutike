@@ -467,7 +467,7 @@ class Router {
                     ? await this.readAttachments(files) 
                     : (exerciseManager.currentExercise?.attachments || []);
 
-                await exerciseManager.solveProblemStream(
+                const result = await exerciseManager.solveProblemStream(
                     problemStatement || this.describeAttachments(files),
                     (reasoning, fromCache) => {
                         if (fromCache) cacheNotice.classList.remove('hidden');
@@ -485,6 +485,15 @@ class Router {
                 );
 
                 UIManager.showNotification('Reponse IA prete!', 'success');
+
+                // Interception Gamification : Analyse de la réponse finale
+                if (window.MaieutikGamification && result && result.solution) {
+                    const gameResult = window.MaieutikGamification.processAIResponse(result.solution);
+                    if (gameResult && gameResult.status === "COMPLETED") {
+                        this.showCompletionToast(gameResult);
+                    }
+                }
+
                 exerciseManager.clearCurrentExercise();
             } catch (error) {
                 console.error("Détail de l'erreur IA:", error);
@@ -544,6 +553,42 @@ class Router {
 
     describeAttachments(files) {
         return `Piece jointe: ${files.map(file => file.name).join(', ')}`;
+    }
+
+    /**
+     * Affiche une notification de succès moderne pour la complétion d'exercice
+     */
+    showCompletionToast(data) {
+        const toast = document.createElement('div');
+        toast.className = "fixed bottom-6 right-6 z-[100] animate-slide-up";
+        toast.style.animation = "maieutikSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards";
+        
+        toast.innerHTML = `
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.1)] w-80">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-indigo-200">✨</div>
+                    <div class="flex-1">
+                        <h4 class="font-black text-slate-900 text-lg leading-tight">Exercice Réussi !</h4>
+                        <p class="text-indigo-600 font-bold">+ ${data.xp_awarded} XP</p>
+                        ${data.badge_unlocked ? `<p class="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-bold inline-block mt-2 border border-amber-100">🏆 ${data.badge_unlocked}</p>` : ''}
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <button onclick="window.location.hash='#dashboard'; this.closest('.fixed').remove();" 
+                        class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-lg shadow-slate-200">
+                        Aller au Tableau de Bord
+                    </button>
+                </div>
+            </div>
+            <style>
+                @keyframes maieutikSlideIn {
+                    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+            </style>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => { if(toast.parentNode) toast.remove(); }, 5000);
     }
 
     loaderMarkup(message) {
