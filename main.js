@@ -425,10 +425,15 @@ class Router {
 
                 UIManager.showNotification('Reponse IA prete!', 'success');
 
-                // Interception Gamification : Analyse de la réponse finale
-                if (window.MaieutikGamification && result && result.solution) {
-                    const gameResult = window.MaieutikGamification.processAIResponse(result.solution);
+                // Interception sécurisée basée sur le texte réellement affiché à l'écran
+                if (window.MaieutikGamification) {
+                    const fullResponseText = solutionContent ? solutionContent.innerText : (result?.solution || "");
+                    
+                    console.log("[Maieutik-Gamification] Analyse du texte final de Gemini...");
+                    const gameResult = window.MaieutikGamification.processAIResponse(fullResponseText);
+                    
                     if (gameResult && gameResult.status === "COMPLETED") {
+                        console.log("[Maieutik-Gamification] Succès détecté ! XP gagnés :", gameResult.xp_awarded);
                         this.showCompletionToast(gameResult);
                     }
                 }
