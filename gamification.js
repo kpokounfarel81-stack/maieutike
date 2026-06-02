@@ -72,12 +72,19 @@ const processAIResponse = (responseText) => {
 /**
  * 1. Déclaration de l'affichage de la liste d'historique
  */
-const renderHistoryList = (filter = 'all') => {
+const renderHistoryList = (filter = 'all', rawExercises = []) => {
     const historyList = document.getElementById('exercises-history-list');
     if (!historyList) return;
 
-    const historyRaw = localStorage.getItem(GAMIFICATION_CONFIG.STORAGE_KEYS.HISTORY);
-    let history = historyRaw ? JSON.parse(historyRaw) : [];
+    const history = rawExercises.map(ex => {
+        // Adapter selon la structure réelle de vos objets exercices
+        return {
+            title: ex.title || ex.problem_statement || ex.problemStatement || "Exercice Maïeutique",
+            subject: ex.subject || "LOGIC", // Si l'exercice n'a pas de sujet, défaut LOGIC
+            status: ex.status || "COMPLETED",
+            xp_earned: ex.xp_earned || ex.xp_awarded || 100 // Points par défaut si non spécifiés
+        };
+    });
 
     const filtered = filter === 'all' ? history : history.filter(ex => ex.subject === filter);
 
@@ -95,8 +102,8 @@ const renderHistoryList = (filter = 'all') => {
                     ${ex.status}
                 </span>
                 <div>
-                    <h4 style="font-size: 14px; font-weight: bold; color: #0f172a; margin: 0;">${ex.title || 'Exercice Maïeutique'}</h4>
-                    <p style="font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">${ex.subject || 'Général'}</p>
+                    <h4 style="font-size: 14px; font-weight: bold; color: #0f172a; margin: 0;">${ex.title}</h4>
+                    <p style="font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">${ex.subject}</p>
                 </div>
             </div>
             <div style="font-size: 14px; font-weight: 900; color: #4f46e5;">
@@ -109,7 +116,7 @@ const renderHistoryList = (filter = 'all') => {
 /**
  * 2. Déclaration de l'initialisation des interactions (filtres)
  */
-const initDashboardInteractions = () => {
+const initDashboardInteractions = (rawExercises) => {
     const filterButtons = document.querySelectorAll('.filter-btn');
     if (!filterButtons.length) return;
 
@@ -121,11 +128,11 @@ const initDashboardInteractions = () => {
             });
             btn.style.backgroundColor = '#0f172a';
             btn.style.color = 'white';
-            renderHistoryList(btn.dataset.filter);
+            renderHistoryList(btn.dataset.filter, rawExercises);
         };
     });
 
-    renderHistoryList('all');
+    renderHistoryList('all', rawExercises);
 };
 
 /**
@@ -133,14 +140,15 @@ const initDashboardInteractions = () => {
  */
 const renderDashboard = () => {
     const hash = window.location.hash;
-    if (hash !== '#dashboard') {
-        return; // Arrêt strict si on n'est pas explicitement sur l'onglet tableau de bord
-    }
+    
+    // CONDITION STRICTE : Si on n'est pas sur le tableau de bord, on stoppe immédiatement
+    if (hash !== '#dashboard') return;
 
     console.log("[Maieutik-Gamification] Début officiel du rendu visuel...");
 
     // 1. Ciblage du conteneur d'affichage de l'application
     const appContainer = document.getElementById('app') || document.querySelector('main') || document.body;
+    if (!appContainer) return;
     
     // 2. Extraction forcée du template si le wrapper n'est pas encore actif
     let container = document.getElementById('dashboard-content');
@@ -202,7 +210,8 @@ const renderDashboard = () => {
     `;
 
     // 5. Activation des filtres et injection de la liste
-    initDashboardInteractions();
+    const rawExercises = (window.exerciseManager && typeof window.exerciseManager.getExercises === 'function') ? window.exerciseManager.getExercises() : [];
+    initDashboardInteractions(rawExercises);
     console.log("[Maieutik-Gamification] Rendu terminé avec succès !");
 };
 
