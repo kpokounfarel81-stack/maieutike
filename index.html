@@ -205,99 +205,55 @@
     </template>
 
     <template id="newDiscussionPage">
-        <div class="max-w-6xl mx-auto pt-12 px-6">
-            <div class="flex flex-col lg:flex-row gap-12 bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-100">
-                
-                <!-- Volet Gauche : Information & Analytics -->
-                <div class="w-full lg:w-5/12 bg-slate-50 p-10 border-r border-slate-100 flex flex-col justify-between">
-                    <div>
-                        <h2 class="text-xs font-bold text-indigo-600 uppercase tracking-[0.2em] mb-8">Plateforme d'apprentissage</h2>
-                        
-                        <div class="space-y-10">
-                            <!-- Jauge Circulaire -->
-                            <div class="flex items-center gap-6">
-                                <div class="relative w-20 h-20">
-                                    <svg class="w-full h-full" viewBox="0 0 36 36">
-                                        <path class="text-slate-200" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        <path class="text-indigo-500" stroke-width="3" stroke-dasharray="90, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                    </svg>
-                                    <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-slate-700">90%</div>
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-slate-800">Progression Conceptuelle</h4>
-                                    <p class="text-xs text-slate-500">Prêt pour un nouveau module</p>
-                                </div>
-                            </div>
-
-                            <!-- Graphe Conceptuel (SVG) -->
-                            <div class="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Mots-clés interconnectés</h4>
-                                <svg viewBox="0 0 200 120" class="w-full h-auto">
-                                    <g stroke="#e2e8f0" stroke-width="1">
-                                        <line x1="100" y1="60" x2="40" y2="30" />
-                                        <line x1="100" y1="60" x2="160" y2="30" />
-                                        <line x1="100" y1="60" x2="100" y2="100" />
-                                    </g>
-                                    <circle cx="100" cy="60" r="8" fill="#4f46e5" />
-                                    <circle cx="40" cy="30" r="5" fill="#94a3b8" />
-                                    <circle cx="160" cy="30" r="5" fill="#94a3b8" />
-                                    <circle cx="100" cy="100" r="5" fill="#94a3b8" />
-                                    <text x="112" y="65" font-size="8" class="fill-slate-600 font-bold">Raisonnement</text>
-                                    <text x="10" y="25" font-size="7" class="fill-slate-400">Logique</text>
-                                    <text x="165" y="25" font-size="7" class="fill-slate-400">Éthique</text>
-                                    <text x="105" y="110" font-size="7" class="fill-slate-400">Preuve</text>
-                                </svg>
-                            </div>
-                        </div>
+        <div class="max-w-4xl mx-auto pt-8 px-6 animate-slide-up">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
+                <form id="newExerciseForm" class="space-y-6">
+                    <!-- ZONE ÉNONCÉ (Ligne 1) -->
+                    <div class="space-y-3">
+                        <h2 class="text-xl font-bold text-slate-800">Énoncé de l'exercice</h2>
+                        <textarea id="exerciseInput" required 
+                            class="w-full p-4 border border-slate-200 rounded-xl h-48 focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-300 text-lg" 
+                            placeholder="Collez votre énoncé ici ou décrivez votre problème..."></textarea>
                     </div>
 
-                    <div class="mt-12 p-4 bg-indigo-50 rounded-xl">
-                        <p class="text-xs text-indigo-700 leading-relaxed italic">
-                            "Le tuteur socratique ne vous donne pas de réponses, il vous aide à accoucher de vos propres vérités."
-                        </p>
-                    </div>
-                </div>
+                    <div id="scannerPreview" class="hidden flex gap-4 mt-2"></div>
 
-                <!-- Volet Droit : Configuration -->
-                <div class="w-full lg:w-7/12 p-10 lg:p-14">
-                    <div class="flex items-center gap-3 mb-10">
-                        <div class="p-2 bg-slate-100 rounded-lg">
-                            <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                        </div>
-                        <h1 class="text-xl font-bold tracking-widest text-slate-900 uppercase">Configuration de la discussion</h1>
-                        <button type="button" onclick="document.getElementById('imageAttachment').click()" class="ml-auto p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition text-slate-600" title="Scanner un exercice">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        </button>
-                        <input type="file" id="imageAttachment" accept="image/*" class="hidden">
-                    </div>
-
-                    <form id="newDiscussionForm" class="space-y-8">
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Choisir votre sujet</label>
-                            <select id="discussionSubject" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-semibold text-slate-700">
-                                <option value="Philosophie : La Caverne de Platon">Philosophie : La Caverne de Platon</option>
-                                <option value="Géométrie : Le Mystère du Carré Doublé">Géométrie : Le Mystère du Carré Doublé</option>
-                                <option value="Logique : Le Paradoxe du Menteur">Logique : Le Paradoxe du Menteur</option>
+                    <!-- BARRE D'OUTILS ET ACTIONS (Ligne 2) -->
+                    <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-100">
+                        <!-- À gauche : Mode -->
+                        <div class="flex items-center gap-2">
+                            <label for="ai-mode" class="text-xs font-bold text-slate-400 uppercase">Mode :</label>
+                            <select id="ai-mode" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="guide" selected>🧠 Guide Maïeutique</option>
+                                <option value="solve">📝 Résolution Complète</option>
+                                <option value="hint">💡 Indice Progressif</option>
+                                <option value="explain">🎨 Explication Imagée</option>
                             </select>
                         </div>
 
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mode de discours</label>
-                            <select id="discussionMode" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700 appearance-none cursor-not-allowed opacity-70">
-                                <option value="guide">Maïeutique Socratique</option>
-                            </select>
+                        <!-- Au centre : Actions secondaires -->
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="scanBtn" onclick="document.getElementById('imageAttachment').click()" 
+                                class="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 transition text-slate-600 shadow-sm" title="Scanner un exercice">
+                                📸
+                            </button>
+                            <input type="file" id="imageAttachment" accept="image/*" class="hidden">
+                            
+                            <button type="button" id="micBtn" 
+                                class="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 transition text-slate-600 shadow-sm" title="Saisie vocale">
+                                🎙️
+                            </button>
                         </div>
 
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Formuler votre question initiale</label>
-                            <textarea id="initialQuestion" required class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl h-40 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300" placeholder="Quelle est votre première question ?"></textarea>
-                        </div>
-
-                        <button type="submit" class="w-full py-5 bg-[#1e3a1e] text-white rounded-2xl font-bold uppercase tracking-[0.2em] hover:bg-[#2a4d2a] hover:shadow-lg transition-all transform active:scale-[0.98]">
-                            Rejoindre la discussion
+                        <!-- À droite : Soumission -->
+                        <button type="submit" id="solveBtn" 
+                            class="ml-auto bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 hover:shadow-lg transition-all transform active:scale-[0.98]">
+                            RÉSOUDRE AVEC L'IA
                         </button>
-                    </form>
-                </div>
+                    </div>
+
+                    <div id="exerciseError" class="hidden text-red-500 text-sm p-3 bg-red-50 rounded-lg"></div>
+                </form>
             </div>
         </div>
     </template>
