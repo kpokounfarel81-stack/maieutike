@@ -303,3 +303,14 @@ header {
     outline: 2px solid #2563eb;
     outline-offset: 2px;
 }
+
+/* Dashboard Maieutik Hybrid Styles */
+.maieutik-dashboard-wrapper { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.bg-white { background-color: #ffffff; }
+.rounded-2xl { border-radius: 1rem; }
+.border-slate-200 { border: 1px solid #e2e8f0; }
+.shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+.bg-indigo-50 { background-color: #e0e7ff; }
+.text-indigo-500 { color: #6366f1; }
+.bg-indigo-500 { background-color: #6366f1; }
+.filter-btn { transition: all 0.2s ease; cursor: pointer; }

@@ -98,11 +98,33 @@ const getLevelData = (xp) => {
  * Rend dynamiquement les statistiques sur l'élément #dashboard-content.
  */
 const renderDashboard = () => {
-    // On cible le conteneur principal de la page dashboard
-    // Note: Assure-toi que ton template dashboardPage dans index.html 
-    // contient un div avec l'id "dashboard-content"
-    const container = document.getElementById('dashboard-content') || document.getElementById('app');
-    if (!container || (window.location.hash !== '#dashboard' && window.location.hash !== '')) return;
+    const hash = window.location.hash;
+    
+    // Forcer le rendu si le hash est vide (accueil par défaut) ou strictement #dashboard
+    if (hash !== '' && hash !== '#dashboard') return;
+
+    console.log("[Maieutik-Gamification] Injection du tableau de bord en cours...");
+
+    // 1. Détection du conteneur de l'application
+    const appContainer = document.getElementById('app') || document.querySelector('main');
+    if (!appContainer) return;
+
+    let container = document.getElementById('dashboard-content');
+    
+    // 2. Injection forcée du template si nécessaire (Nettoyée du return parasite)
+    if (!container) {
+        const template = document.getElementById('dashboardPage');
+        if (template) {
+            appContainer.innerHTML = template.innerHTML;
+            container = document.getElementById('dashboard-content');
+        }
+    }
+
+    // 3. Exécution du rendu si le conteneur est présent
+    if (!container) {
+        console.error("[Maieutik-Gamification] Impossible de trouver ou d'injecter #dashboard-content");
+        return;
+    }
 
     const stats = getUserStats();
     const { level, currentLevelXp, progressPercent } = getLevelData(stats.xp);
@@ -143,7 +165,6 @@ const renderDashboard = () => {
             <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <h3 class="text-xl font-black text-slate-900">Historique des exercices</h3>
                 
-                <!-- Filtres ré-intégrés avec data-filter pour main.js -->
                 <div id="subjectFilters" class="flex gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
                     <button data-filter="all" class="filter-btn px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white transition-all shadow-sm">Tous</button>
                     <button data-filter="MATHEMATICS" class="filter-btn px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-900 transition-all">Maths</button>
@@ -159,13 +180,14 @@ const renderDashboard = () => {
 
             <!-- Zone dynamique de la liste des exercices passés -->
             <div id="exercises-history-list" class="grid grid-cols-1 gap-4">
-                <!-- Les exercices s'injecteront ici via main.js -->
                 <p class="text-xs text-slate-400 italic py-4">Chargement de votre historique...</p>
             </div>
         </div>`;
 
-    // Initialisation des interactions et de la liste
-    initDashboardInteractions();
+    // Ré-initialisation des filtres et de la liste après l'écriture dans le DOM
+    if (typeof initDashboardInteractions === 'function') {
+        initDashboardInteractions();
+    }
 };
 
 /**
