@@ -326,6 +326,9 @@ class Router {
             : 'N/A';
         const modeLabels = { guide: 'Maïeutique', solve: 'Résolution', hint: 'Indice', explain: 'Explication', 'N/A': 'Aucun' };
 
+        // Calcul de la Gamification (XP)
+        const xpData = ui.calculateLevel(exerciseCount);
+
         const statsGrid = document.getElementById('statsGrid');
         const cardsContainer = document.getElementById('dashboardCardsContainer');
 
@@ -339,9 +342,17 @@ class Router {
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Exercices Complétés</p>
                 <p class="text-2xl font-bold text-[#111827]">${exerciseCount}</p>
             </div>
-            <div class="bg-gray-50 border border-gray-200 p-6 rounded-2xl">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Série de Jours</p>
-                <p class="text-2xl font-bold text-[#111827]">12 jours</p>
+            <div class="bg-gray-50 border border-gray-200 p-6 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">⭐ Niveau ${xpData.level}</p>
+                    <p class="text-2xl font-bold text-[#111827]">XP global : ${xpData.totalXp} pts</p>
+                </div>
+                <div class="mt-4">
+                    <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                        <div class="bg-yellow-500 h-full transition-all duration-1000" style="width: ${xpData.progressPercent}%"></div>
+                    </div>
+                    <p class="text-[9px] font-bold text-gray-400 uppercase mt-1 text-right">${xpData.progressPercent}% vers le niveau ${xpData.level + 1}</p>
+                </div>
             </div>
         `;
 
