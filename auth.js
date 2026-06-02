@@ -103,3 +103,4 @@ const authManager = new AuthManager();
 // Rendre l'instance accessible globalement (scripts non-modules / inline handlers)
 // Nécessaire en déploiement (Netlify) pour que main.js puisse l'utiliser.
 window.authManager = authManager;
+window.auth = authManager;
