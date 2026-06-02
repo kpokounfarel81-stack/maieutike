@@ -232,7 +232,14 @@ class Router {
                     <form id="newExerciseForm" class="space-y-6">
                         <div class="flex justify-between items-center">
                             <h2 class="text-2xl font-bold text-slate-900 font-serif">Énoncé de l'exercice</h2>
-                            <div class="mode-selector-container">
+                            <div class="flex items-center gap-3">
+                                <button type="button" onclick="document.getElementById('imageAttachment').click()" 
+                                    class="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition text-slate-600" title="Scanner un exercice">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                </button>
+                                <input type="file" id="imageAttachment" accept="image/*" class="hidden">
+                                
+                                <div class="mode-selector-container">
                                 <label for="ai-mode" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Mode :</label>
                                 <select id="ai-mode" class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                                     <option value="guide" selected>🧠 Guide Maïeutique</option>
@@ -247,6 +254,8 @@ class Router {
                             class="w-full p-6 bg-slate-50 border border-slate-200 rounded-2xl h-48 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300 text-lg" 
                             placeholder="Collez votre énoncé ici..."></textarea>
                         
+                        <div id="scannerPreview" class="hidden flex gap-4 mt-2"></div>
+
                         <div class="space-y-3">
                             <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Votre tentative (optionnel)</label>
                             <textarea id="attemptInput" 
@@ -280,10 +289,38 @@ class Router {
         const form = document.getElementById('newExerciseForm');
         const fileInput = document.getElementById('exerciseFiles');
         const fileList = document.getElementById('fileList');
+        const imageInput = document.getElementById('imageAttachment');
+        const scannerPreview = document.getElementById('scannerPreview');
+        let scannerImage = null;
 
         fileInput.addEventListener('change', () => {
             const files = Array.from(fileInput.files || []);
             fileList.textContent = files.length ? `${files.length} fichier(s) sélectionné(s)` : '';
+        });
+
+        imageInput?.addEventListener('change', () => {
+            const file = imageInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    scannerImage = { name: file.name, type: file.type, size: file.size, dataUrl: e.target.result };
+                    scannerPreview.innerHTML = `
+                        <div class="relative group inline-block">
+                            <img src="${e.target.result}" class="w-24 h-24 object-cover rounded-xl border-2 border-indigo-50 shadow-sm">
+                            <button type="button" id="removeScannerImage" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    `;
+                    scannerPreview.classList.remove('hidden');
+                    document.getElementById('removeScannerImage').onclick = () => {
+                        scannerImage = null;
+                        scannerPreview.classList.add('hidden');
+                        imageInput.value = '';
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
         });
 
         form.addEventListener('submit', (e) => {
@@ -293,6 +330,7 @@ class Router {
                 problem_statement: document.getElementById('exerciseInput').value.trim(),
                 attempt: document.getElementById('attemptInput').value.trim(),
                 mode: document.getElementById('ai-mode').value,
+                attachments: scannerImage ? [scannerImage] : [],
                 isNew: true,
                 autoStart: true // Flag pour lancer l'IA automatiquement au chargement de la page suivante
             };
@@ -442,7 +480,9 @@ class Router {
             solutionContent.innerHTML = this.loaderMarkup('Generation de la reponse...');
 
             try {
-                const attachments = await this.readAttachments(files);
+                const attachments = files.length > 0 
+                    ? await this.readAttachments(files) 
+                    : (exerciseManager.currentExercise?.attachments || []);
 
                 await exerciseManager.solveProblemStream(
                     problemStatement || this.describeAttachments(files),

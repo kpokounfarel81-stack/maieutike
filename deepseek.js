@@ -57,7 +57,33 @@ class DeepSeekAPI {
         for (let i = 0; i < uniqueModels.length; i++) {
             const modelName = uniqueModels[i];
             const systemInstruction = this.getSystemPrompt(requestPayload.mode);
-            const promptText = `Problème: ${requestPayload.problemStatement}\n${requestPayload.attempt ? `Ma tentative: ${requestPayload.attempt}` : ''}`;
+            
+            // 1. Préparation du prompt textuel
+            const promptText = `Problème: ${requestPayload.problemStatement}\n${requestPayload.attempt ? `Ma tentative: ${requestPayload.attempt}` : ''}`.trim() || "Analyse l'énoncé dans l'image jointe.";
+            
+            // 2. Construction des composants du message (Multimodal)
+            const parts = [{ text: promptText }];
+
+            // Vérification et intégration des pièces jointes (Images)
+            if (requestPayload.attachments && requestPayload.attachments.length > 0) {
+                requestPayload.attachments.forEach(att => {
+                    // On ne traite que les images pour Gemini inlineData
+                    if (att.dataUrl && att.dataUrl.includes('base64,') && att.type?.startsWith('image/')) {
+                        try {
+                            const base64DataPure = att.dataUrl.split('base64,')[1];
+                            parts.push({
+                                inlineData: {
+                                    mimeType: att.type,
+                                    data: base64DataPure
+                                }
+                            });
+                        } catch (e) {
+                            console.warn("[IA] Erreur lors de l'extraction base64 de l'image:", e);
+                        }
+                    }
+                });
+            }
+
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse`;
             
             let fullText = "";
@@ -71,8 +97,9 @@ class DeepSeekAPI {
                         'Content-Type': 'application/json',
                         'x-goog-api-key': apiKey
                     },
+                    // 3. Payload Gemini Multimodal
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: promptText }] }],
+                        contents: [{ parts }],
                         systemInstruction: { parts: [{ text: systemInstruction }] }
                     })
                 });
@@ -135,7 +162,7 @@ class DeepSeekAPI {
                     continue;
                 }
                 throw error;
-                        }
+            }
         }
         throw lastError;
     }
