@@ -358,13 +358,19 @@
       }
     </script>
 
-    <!-- 3. Scripts de l'Application (Structure aplatie à la racine) -->
+    <!-- 1. Cœur de l'application et Base de données -->
     <script src="./supabase.js"></script>
+
+    <!-- 2. Services et Logique Métier (Auth doit TOUJOURS être avant le reste) -->
     <script src="./auth.js"></script>
     <script src="./gamification.js"></script>
-    <script src="./deepseek.js"></script> <!-- Retrait du type module si les autres scripts ne sont pas des modules -->
+    <script src="./deepseek.js"></script>
+
+    <!-- 3. Gestionnaires d'interface et d'exercices -->
     <script src="./ui.js"></script>
     <script src="./exercises.js"></script>
+
+    <!-- 4. Orchestrateur principal -->
     <script src="./main.js"></script>
 </body>
 </html>

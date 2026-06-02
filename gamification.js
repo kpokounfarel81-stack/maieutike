@@ -72,9 +72,12 @@ const processAIResponse = (responseText) => {
 /**
  * 1. Déclaration de l'affichage de la liste d'historique
  */
-const renderHistoryList = (filter = 'all', rawExercises = []) => {
+const renderHistoryList = (filter = 'all') => {
     const historyList = document.getElementById('exercises-history-list');
     if (!historyList) return;
+
+    // Récupération des exercices réels depuis l'application
+    const rawExercises = (window.exerciseManager && typeof window.exerciseManager.getExercises === 'function') ? window.exerciseManager.getExercises() : [];
 
     const history = rawExercises.map(ex => {
         // Adapter selon la structure réelle de vos objets exercices
@@ -82,7 +85,7 @@ const renderHistoryList = (filter = 'all', rawExercises = []) => {
             title: ex.title || ex.problem_statement || ex.problemStatement || "Exercice Maïeutique",
             subject: ex.subject || "LOGIC", // Si l'exercice n'a pas de sujet, défaut LOGIC
             status: ex.status || "COMPLETED",
-            xp_earned: ex.xp_earned || ex.xp_awarded || 100 // Points par défaut si non spécifiés
+            xp_earned: (ex.status === "COMPLETED" || !ex.status) ? 100 : 0
         };
     });
 
@@ -116,7 +119,7 @@ const renderHistoryList = (filter = 'all', rawExercises = []) => {
 /**
  * 2. Déclaration de l'initialisation des interactions (filtres)
  */
-const initDashboardInteractions = (rawExercises) => {
+const initDashboardInteractions = () => {
     const filterButtons = document.querySelectorAll('.filter-btn');
     if (!filterButtons.length) return;
 
@@ -128,11 +131,11 @@ const initDashboardInteractions = (rawExercises) => {
             });
             btn.style.backgroundColor = '#0f172a';
             btn.style.color = 'white';
-            renderHistoryList(btn.dataset.filter, rawExercises);
+            renderHistoryList(btn.dataset.filter);
         };
     });
 
-    renderHistoryList('all', rawExercises);
+    renderHistoryList('all');
 };
 
 /**
@@ -166,9 +169,16 @@ const renderDashboard = () => {
 
     if (!container) return;
 
-    // 3. Récupération des statistiques de jeu
+    // 3. Récupération et calcul des statistiques réelles
+    const rawExercises = (window.exerciseManager && typeof window.exerciseManager.getExercises === 'function') ? window.exerciseManager.getExercises() : [];
+    
+    // Calcul de l'XP totale : 100 XP par exercice COMPLETED
+    const totalXp = rawExercises.reduce((acc, ex) => {
+        return (ex.status === 'COMPLETED' || !ex.status) ? acc + 100 : acc;
+    }, 0);
+
     const stats = getUserStats();
-    const { level, currentLevelXp, progressPercent } = getLevelData(stats.xp);
+    const { level, currentLevelXp, progressPercent } = getLevelData(totalXp);
 
     console.log("[Maieutik-Gamification] Injection du code HTML hybride...");
 
@@ -210,8 +220,7 @@ const renderDashboard = () => {
     `;
 
     // 5. Activation des filtres et injection de la liste
-    const rawExercises = (window.exerciseManager && typeof window.exerciseManager.getExercises === 'function') ? window.exerciseManager.getExercises() : [];
-    initDashboardInteractions(rawExercises);
+    initDashboardInteractions();
     console.log("[Maieutik-Gamification] Rendu terminé avec succès !");
 };
 

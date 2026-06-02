@@ -90,8 +90,8 @@ class Router {
         const tabs = document.getElementById('nav-tabs');
         const authNav = document.getElementById('nav-auth');
         
-        if (authManager.isAuthenticated()) {
-            const userEmail = authManager.user?.email || 'Utilisateur';
+        if (window.authManager && window.authManager.isAuthenticated()) {
+            const userEmail = window.authManager.user?.email || 'Utilisateur';
             // Injection de la zone utilisateur avec le bouton "Create New Exercise"
             nav.innerHTML = `
                 <div class="flex items-center gap-4">
@@ -99,7 +99,7 @@ class Router {
                     <button onclick="router.newExercise()" class="px-4 py-2 bg-[#0f172a] text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition">
                         Create New Exercise
                     </button>
-                    <button onclick="authManager.logout()" class="text-sm text-red-500 hover:text-red-700 font-medium">Quitter</button>
+                    <button onclick="window.authManager.logout()" class="text-sm text-red-500 hover:text-red-700 font-medium">Quitter</button>
                 </div>
             `;
             nav.classList.remove('hidden');
@@ -210,7 +210,7 @@ class Router {
             }
 
             errorDiv.classList.add('hidden');
-            const result = await authManager.signup(email, password, username);
+            const result = await window.authManager.signup(email, password, username);
 
             if (result.success) {
                 UIManager.showNotification('Inscription réussie !', 'success');
@@ -537,8 +537,8 @@ class Router {
     }
 
     async setupProfilePage() {
-        const profile = await authManager.loadProfile();
-        const user = authManager.user;
+        const profile = await window.authManager.loadProfile();
+        const user = window.authManager.user;
 
         document.getElementById('profileName').value = profile?.full_name || user?.email || 'Non defini';
         document.getElementById('profileEmail').value = user?.email || '';
