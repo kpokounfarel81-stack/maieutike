@@ -312,10 +312,13 @@ class Router {
         });
     }
 
-    setupDashboardPage() {
-        console.log("[Main] Passage de relais au module de gamification...");
+    async setupDashboardPage() {
+        await exerciseManager.loadUserExercises();
+        const exercises = exerciseManager.getExercises() || [];
+        console.log("[Main] Passage de relais avec les exercices :", exercises);
+
         if (window.MaieutikGamification) {
-            window.MaieutikGamification.renderDashboard();
+            window.MaieutikGamification.renderDashboard(exercises);
         } else {
             console.error("[Main] Le module MaieutikGamification est introuvable au moment du rendu.");
         }

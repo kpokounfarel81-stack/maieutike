@@ -72,22 +72,16 @@ const processAIResponse = (responseText) => {
 /**
  * 1. Déclaration de l'affichage de la liste d'historique
  */
-const renderHistoryList = (filter = 'all') => {
+const renderHistoryList = (filter = 'all', supabaseExercises = []) => {
     const historyList = document.getElementById('exercises-history-list');
     if (!historyList) return;
 
-    // Récupération des exercices réels depuis l'application
-    const rawExercises = (window.exerciseManager && typeof window.exerciseManager.getExercises === 'function') ? window.exerciseManager.getExercises() : [];
-
-    const history = rawExercises.map(ex => {
-        // Adapter selon la structure réelle de vos objets exercices
-        return {
-            title: ex.title || ex.problem_statement || ex.problemStatement || "Exercice Maïeutique",
-            subject: ex.subject || "LOGIC", // Si l'exercice n'a pas de sujet, défaut LOGIC
-            status: ex.status || "COMPLETED",
-            xp_earned: (ex.status === "COMPLETED" || !ex.status) ? 100 : 0
-        };
-    });
+    const history = supabaseExercises.map(ex => ({
+        title: ex.title || ex.problem_statement || ex.problemStatement || "Exercice Maïeutique",
+        subject: ex.subject || "LOGIC", 
+        status: ex.status || "COMPLETED",
+        xp_earned: (ex.status === "COMPLETED" || ex.status === "Terminé" || !ex.status) ? 100 : 0
+    }));
 
     const filtered = filter === 'all' ? history : history.filter(ex => ex.subject === filter);
 
@@ -119,7 +113,7 @@ const renderHistoryList = (filter = 'all') => {
 /**
  * 2. Déclaration de l'initialisation des interactions (filtres)
  */
-const initDashboardInteractions = () => {
+const initDashboardInteractions = (supabaseExercises = []) => {
     const filterButtons = document.querySelectorAll('.filter-btn');
     if (!filterButtons.length) return;
 
@@ -131,17 +125,17 @@ const initDashboardInteractions = () => {
             });
             btn.style.backgroundColor = '#0f172a';
             btn.style.color = 'white';
-            renderHistoryList(btn.dataset.filter);
+            renderHistoryList(btn.dataset.filter, supabaseExercises);
         };
     });
 
-    renderHistoryList('all');
+    renderHistoryList('all', supabaseExercises);
 };
 
 /**
  * 3. Fonction principale de rendu
  */
-const renderDashboard = () => {
+const renderDashboard = (supabaseExercises = []) => {
     const hash = window.location.hash;
     
     // CONDITION STRICTE : Si on n'est pas sur le tableau de bord, on stoppe immédiatement
@@ -169,16 +163,12 @@ const renderDashboard = () => {
 
     if (!container) return;
 
-    // 3. Récupération et calcul des statistiques réelles
-    const rawExercises = (window.exerciseManager && typeof window.exerciseManager.getExercises === 'function') ? window.exerciseManager.getExercises() : [];
-    
-    // Calcul de l'XP totale : 100 XP par exercice COMPLETED
-    const totalXp = rawExercises.reduce((acc, ex) => {
-        return (ex.status === 'COMPLETED' || !ex.status) ? acc + 100 : acc;
-    }, 0);
+    // Calcul de l'XP réelle : 100 XP par exercice COMPLETED dans Supabase
+    const completedExercises = supabaseExercises.filter(ex => ex.status === 'COMPLETED' || ex.status === 'Terminé' || !ex.status);
+    const xpCalculee = completedExercises.length * 100;
 
-    const stats = getUserStats();
-    const { level, currentLevelXp, progressPercent } = getLevelData(totalXp);
+    const stats = getUserStats(); // Pour récupérer la série et les badges du localStorage
+    const { level, currentLevelXp, progressPercent } = getLevelData(xpCalculee);
 
     console.log("[Maieutik-Gamification] Injection du code HTML hybride...");
 
@@ -220,7 +210,7 @@ const renderDashboard = () => {
     `;
 
     // 5. Activation des filtres et injection de la liste
-    initDashboardInteractions();
+    initDashboardInteractions(supabaseExercises);
     console.log("[Maieutik-Gamification] Rendu terminé avec succès !");
 };
 
