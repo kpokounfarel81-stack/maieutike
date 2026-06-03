@@ -315,10 +315,12 @@ class Router {
     async setupDashboardPage() {
         await exerciseManager.loadUserExercises();
         const exercises = exerciseManager.getExercises() || [];
-        console.log("[Main] Passage de relais avec les exercices :", exercises);
+
+        // Charger le profil frais depuis Supabase pour synchroniser l'XP et le Niveau
+        const profile = await window.authManager.loadProfile();
 
         if (window.MaieutikGamification) {
-            window.MaieutikGamification.renderDashboard(exercises);
+            window.MaieutikGamification.renderDashboard(exercises, profile);
         } else {
             console.error("[Main] Le module MaieutikGamification est introuvable au moment du rendu.");
         }
@@ -425,17 +427,20 @@ class Router {
 
                 UIManager.showNotification('Reponse IA prete!', 'success');
 
-                // Interception sécurisée basée sur le texte réellement affiché à l'écran
-                if (window.MaieutikGamification) {
-                    const fullResponseText = solutionContent ? solutionContent.innerText : (result?.solution || "");
-                    
-                    console.log("[Maieutik-Gamification] Analyse du texte final de Gemini...");
-                    const gameResult = window.MaieutikGamification.processAIResponse(fullResponseText);
-                    
-                    if (gameResult && gameResult.status === "COMPLETED") {
-                        console.log("[Maieutik-Gamification] Succès détecté ! XP gagnés :", gameResult.xp_awarded);
-                        this.showCompletionToast(gameResult);
+                // AUTOMATISATION GAMIFICATION : Liaison persistante avec Supabase
+                const gameData = result.gamification;
+                if (gameData && gameData.status === "COMPLETED") {
+                    const userId = window.authManager.getUserId();
+                    if (userId && window.supabaseClient) {
+                        // 1. Mise à jour des colonnes xp, level, streak dans Supabase
+                        await window.supabaseClient.updateUserStats(userId, {
+                            xpAwarded: gameData.xp_awarded,
+                            incrementStreak: gameData.streak_increment
+                        });
+                        // 2. Clear du cache local pour forcer un rechargement au prochain dashboard
+                        window.authManager.profile = null;
                     }
+                    this.showCompletionToast(gameData);
                 }
 
                 exerciseManager.clearCurrentExercise();

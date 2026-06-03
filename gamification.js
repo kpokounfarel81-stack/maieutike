@@ -135,22 +135,17 @@ const initDashboardInteractions = (supabaseExercises = []) => {
 /**
  * 3. Fonction principale de rendu
  */
-const renderDashboard = (supabaseExercises = []) => {
+const renderDashboard = (supabaseExercises = [], userProfile = null) => {
     const hash = window.location.hash;
-    
-    // CONDITION STRICTE : Si on n'est pas sur le tableau de bord, on stoppe immédiatement
-    if (hash !== '#dashboard') return;
+    if (hash !== '#dashboard' && hash !== '') return;
 
     console.log("[Maieutik-Gamification] Début officiel du rendu visuel...");
 
-    // 1. Ciblage du conteneur d'affichage de l'application
     const appContainer = document.getElementById('app') || document.querySelector('main') || document.body;
     if (!appContainer) return;
-    
-    // 2. Extraction forcée du template si le wrapper n'est pas encore actif
+
     let container = document.getElementById('dashboard-content');
     if (!container) {
-        console.log("[Maieutik-Gamification] #dashboard-content introuvable. Extraction forcée du template...");
         const template = document.getElementById('dashboardPage');
         if (template) {
             appContainer.innerHTML = template.innerHTML;
@@ -163,12 +158,24 @@ const renderDashboard = (supabaseExercises = []) => {
 
     if (!container) return;
 
-    // Calcul de l'XP réelle : 100 XP par exercice COMPLETED dans Supabase
-    const completedExercises = supabaseExercises.filter(ex => ex.status === 'COMPLETED' || ex.status === 'Terminé' || !ex.status);
-    const xpCalculee = completedExercises.length * 100;
+    // --- LOGIQUE DE LIAISON BDD ---
+    // Utilisation prioritaire des colonnes du profil Supabase (xp, level, streak)
+    const totalXp = (userProfile && userProfile.xp !== undefined) 
+        ? Number(userProfile.xp) 
+        : 0;
 
-    const stats = getUserStats(); // Pour récupérer la série et les badges du localStorage
-    const { level, currentLevelXp, progressPercent } = getLevelData(xpCalculee);
+    const streak = (userProfile && userProfile.streak_days !== undefined) 
+        ? Number(userProfile.streak_days) 
+        : (parseInt(localStorage.getItem(GAMIFICATION_CONFIG.STORAGE_KEYS.STREAK)) || 0);
+
+    const badgesCount = (userProfile && userProfile.badges_count !== undefined)
+        ? Number(userProfile.badges_count)
+        : (JSON.parse(localStorage.getItem(GAMIFICATION_CONFIG.STORAGE_KEYS.BADGES)) || []).length;
+
+    const { level, currentLevelXp, progressPercent } = getLevelData(totalXp);
+    
+    // Utilisation du niveau réel stocké en BDD
+    const displayLevel = (userProfile && userProfile.level) ? userProfile.level : level;
 
     console.log("[Maieutik-Gamification] Injection du code HTML hybride...");
 
@@ -179,7 +186,7 @@ const renderDashboard = (supabaseExercises = []) => {
             <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <div>
                     <h2 style="color: #6366f1; font-size: 12px; font-weight: 900; text-transform: uppercase; margin: 0;">Apprenti Socratique</h2>
-                    <p style="font-size: 30px; font-weight: 900; margin: 4px 0; color: #0f172a;">Niveau ${level}</p>
+                    <p style="font-size: 30px; font-weight: 900; margin: 4px 0; color: #0f172a;">Niveau ${displayLevel}</p>
                     <div style="width: 240px; background: #f1f5f9; height: 10px; border-radius: 10px; overflow: hidden; margin-top: 8px;">
                         <div style="background: #6366f1; width: ${progressPercent}%; height: 100%; transition: width 1s ease-out;"></div>
                     </div>
@@ -189,8 +196,8 @@ const renderDashboard = (supabaseExercises = []) => {
             </div>
             
             <div style="display: flex; gap: 16px; margin: 16px 0;">
-                <div style="background: white; border: 1px solid #e2e8f0; padding: 16px; border-radius: 16px; flex: 1; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);"><span>🔥</span> <b style="color: #0f172a;">${stats.streak} Jours</b></div>
-                <div style="background: white; border: 1px solid #e2e8f0; padding: 16px; border-radius: 16px; flex: 1; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);"><span>🏆</span> <b style="color: #0f172a;">${stats.badges.length} Badges</b></div>
+                <div style="background: white; border: 1px solid #e2e8f0; padding: 16px; border-radius: 16px; flex: 1; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);"><span>🔥</span> <b style="color: #0f172a;">${streak} Jours</b></div>
+                <div style="background: white; border: 1px solid #e2e8f0; padding: 16px; border-radius: 16px; flex: 1; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);"><span>🏆</span> <b style="color: #0f172a;">${badgesCount} Badges</b></div>
             </div>
 
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">

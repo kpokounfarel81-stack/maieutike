@@ -276,9 +276,27 @@ Style général : Créatif, accessible, pédagogique.`;
             const reasoningPart = text.substring(0, index);
             const solutionPart = text.substring(index + match[0].length);
 
+            // Extraction sécurisée du bloc JSON pour la gamification
+            let gamification = null;
+            const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+            const jsonMatch = solutionPart.match(jsonRegex);
+            
+            if (jsonMatch) {
+                try {
+                    const rawJson = JSON.parse(jsonMatch[1]);
+                    gamification = {
+                        status: rawJson.status,
+                        xp_awarded: Number(rawJson.xp_awarded) || 0, // Force le cast en Number
+                        streak_increment: Boolean(rawJson.streak_increment),
+                        badge_unlocked: rawJson.badge_unlocked || null
+                    };
+                } catch (e) { console.error("[IA] Erreur parsing JSON gamification:", e); }
+            }
+
             return {
                 reasoning: reasoningPart.replace(démarcheRegex, "").trim(),
-                solution: solutionPart.trim()
+                solution: solutionPart.trim(),
+                gamification: gamification
             };
         }
         return {
