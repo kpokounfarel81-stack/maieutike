@@ -118,7 +118,7 @@ const initDashboardInteractions = (supabaseExercises = []) => {
     if (!filterButtons.length) return;
 
     filterButtons.forEach(btn => {
-        btn.onclick = () => {
+        btn.addEventListener('click', () => {
             filterButtons.forEach(b => {
                 b.style.backgroundColor = 'transparent';
                 b.style.color = '#64748b';
@@ -126,8 +126,16 @@ const initDashboardInteractions = (supabaseExercises = []) => {
             btn.style.backgroundColor = '#0f172a';
             btn.style.color = 'white';
             renderHistoryList(btn.dataset.filter, supabaseExercises);
-        };
+        });
     });
+
+    const newExBtn = document.getElementById('dashboard-new-exercise-btn');
+    if (newExBtn) {
+        newExBtn.addEventListener('click', () => {
+            if (window.router && window.router.newExercise) window.router.newExercise();
+            else window.location.hash = '#new-discussion';
+        });
+    }
 
     renderHistoryList('all', supabaseExercises);
 };
@@ -178,16 +186,23 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
     // 3. Récupération Streak & Badges
     const streak = (userProfile && userProfile.streak_days !== undefined)
         ? Number(userProfile.streak_days)
-        : (parseInt(localStorage.getItem('maieutik_streak')) || 1); // Fallback à 1 jour par défaut
+        : (parseInt(localStorage.getItem(GAMIFICATION_CONFIG.STORAGE_KEYS.STREAK)) || 1); // Fallback à 1 jour par défaut
 
     const badgesCount = (userProfile && userProfile.badges_count !== undefined)
         ? Number(userProfile.badges_count)
-        : (JSON.parse(localStorage.getItem('maieutik_badges')) || ['🎓']).length; // Fallback local
+        : (JSON.parse(localStorage.getItem(GAMIFICATION_CONFIG.STORAGE_KEYS.BADGES)) || ['🎓']).length; // Fallback local
 
     console.log(`[Maieutik-Gamification] XP Total: ${finalXp}, Level: ${displayLevel}, Progress: ${progressPercent}%`);
 
     // 4. Injection du code HTML épuré (Sans doublons)
     container.innerHTML = `
+        <style>
+            #dashboard-new-exercise-btn:hover { background-color: #4f46e5 !important; transform: translateY(-1px); }
+            #dashboard-new-exercise-btn:active { transform: translateY(0); }
+            .filter-btn:hover { background-color: #f1f5f9 !important; }
+            .filter-btn[style*="background-color: rgb(15, 23, 42)"]:hover { background-color: #1e293b !important; }
+        </style>
+
         <!-- BLOC 1 : GAMIFICATION -->
         <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <div>
@@ -215,11 +230,16 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
         <!-- BLOC 2 : HISTORIQUE -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
             <h3 style="font-size: 18px; font-weight: 900; margin: 0; color: #0f172a;">Historique des exercices</h3>
-            <div id="subjectFilters" style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <button data-filter="all" class="filter-btn" style="background: #0f172a; color: white; padding: 6px 14px; border-radius: 6px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer;">Tous</button>
-                <button data-filter="MATHEMATICS" class="filter-btn" style="background: transparent; color: #64748b; padding: 6px 14px; border-radius: 6px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer;">Maths</button>
-                <button data-filter="PHILOSOPHY" class="filter-btn" style="background: transparent; color: #64748b; padding: 6px 14px; border-radius: 6px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer;">Philo</button>
-                <button data-filter="LOGIC" class="filter-btn" style="background: transparent; color: #64748b; padding: 6px 14px; border-radius: 6px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer;">Logique</button>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div id="subjectFilters" style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <button data-filter="all" class="filter-btn" style="background: #0f172a; color: white; padding: 6px 14px; border-radius: 6px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer;">Tous</button>
+                    <button data-filter="MATHEMATICS" class="filter-btn" style="background: transparent; color: #64748b; padding: 6px 14px; border-radius: 6px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer;">Maths</button>
+                    <button data-filter="PHILOSOPHY" class="filter-btn" style="background: transparent; color: #64748b; padding: 6px 14px; border-radius: 6px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer;">Philo</button>
+                    <button data-filter="LOGIC" class="filter-btn" style="background: transparent; color: #64748b; padding: 6px 14px; border-radius: 6px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer;">Logique</button>
+                </div>
+                <button id="dashboard-new-exercise-btn" style="background: #6366f1; color: white; padding: 6px 14px; border-radius: 8px; border: 0; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                    <span>+</span> New Exercise
+                </button>
             </div>
         </div>
         <div id="exercises-history-list"></div>
