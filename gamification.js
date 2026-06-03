@@ -153,8 +153,11 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
 
     // 1. Extraction blindée : Somme de l'XP de TOUS les exercices
     const totalXpFromExercises = supabaseExercises.reduce((sum, ex) => {
-        const isCompleted = ex.status === 'COMPLETED' || ex.status === 'Terminé';
+        // Fallback chirurgical : si ex.status n'existe pas en BDD, on le considère complété d'office
+        const isCompleted = !ex.status || ex.status === 'COMPLETED' || ex.status === 'Terminé';
+        
         if (isCompleted) {
+            // Accepte toutes les variantes de clés possibles, ou donne 100 XP par défaut
             const earned = Number(ex.xp_earned || ex.xp_awarded || 100);
             return sum + earned;
         }
