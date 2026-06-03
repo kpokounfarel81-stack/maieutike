@@ -274,7 +274,7 @@ Style général : Créatif, accessible, pédagogique.`;
         if (match) {
             const index = match.index;
             const reasoningPart = text.substring(0, index);
-            const solutionPart = text.substring(index + match[0].length);
+            let solutionPart = text.substring(index + match[0].length);
 
             // Extraction sécurisée du bloc JSON pour la gamification
             let gamification = null;
@@ -290,6 +290,9 @@ Style général : Créatif, accessible, pédagogique.`;
                         streak_increment: Boolean(rawJson.streak_increment),
                         badge_unlocked: rawJson.badge_unlocked || null
                     };
+
+                    // Nettoyage de la solution : on retire le bloc JSON du texte final pour éviter l'affichage brut
+                    solutionPart = solutionPart.replace(jsonRegex, "").trim();
                 } catch (e) { console.error("[IA] Erreur parsing JSON gamification:", e); }
             }
 
