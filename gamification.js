@@ -180,8 +180,13 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
     // 2. Calcul local fiable
     const xpPerLevel = 500;
     const displayLevel = Math.floor(finalXp / xpPerLevel) + 1;
-    const currentLevelXp = finalXp % xpPerLevel;
-    const progressPercent = (currentLevelXp / xpPerLevel) * 100;
+    let currentLevelXp = finalXp % xpPerLevel;
+    let progressPercent = (currentLevelXp / xpPerLevel) * 100;
+
+    // Si l'utilisateur a exactement atteint le niveau (reste = 0) et qu'il a de l'XP
+    if (currentLevelXp === 0 && finalXp > 0) {
+        progressPercent = 100; // Indique que le niveau précédent a été complété à 100%
+    }
 
     // 3. Récupération Streak & Badges
     const streak = (userProfile && userProfile.streak_days !== undefined)
@@ -193,6 +198,8 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
         : (JSON.parse(localStorage.getItem(GAMIFICATION_CONFIG.STORAGE_KEYS.BADGES)) || ['🎓']).length; // Fallback local
 
     console.log(`[Maieutik-Gamification] XP Total: ${finalXp}, Level: ${displayLevel}, Progress: ${progressPercent}%`);
+
+    const xpDisplayText = `${finalXp} XP au total`;
 
     // 4. Injection du code HTML épuré (Sans doublons)
     container.innerHTML = `
@@ -208,7 +215,7 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
             <div>
                 <h2 style="color: #6366f1; font-size: 12px; font-weight: 900; text-transform: uppercase; margin: 0;">Apprenti Socratique</h2>
                 <p style="font-size: 30px; font-weight: 900; margin: 4px 0; color: #0f172a;">Niveau ${displayLevel}</p>
-                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${currentLevelXp} / ${xpPerLevel} XP (${Math.round(progressPercent)}%)</div>
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${xpDisplayText} (Niveau ${displayLevel})</div>
                 <div style="width: 240px; background: #f1f5f9; height: 10px; border-radius: 10px; overflow: hidden; margin-top: 8px;">
                     <div style="background: #6366f1; width: ${progressPercent}%; height: 100%; transition: width 1s ease-out;"></div>
                 </div>
