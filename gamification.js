@@ -139,8 +139,17 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
     const hash = window.location.hash;
     if (hash !== '#dashboard' && hash !== '') return;
 
-    const container = document.getElementById('dashboard-container'); // Vérifiez que cet ID correspond à votre div principale
-    if (!container) return;
+    let container = document.getElementById('dashboard-container');
+    if (!container) {
+        // Si le conteneur spécifique n'existe pas, on cherche la zone de contenu principale ou le body
+        const mainContent = document.querySelector('main') || document.getElementById('app') || document.body;
+        container = document.createElement('div');
+        container.id = 'dashboard-container';
+        container.style.maxWidth = '1200px';
+        container.style.margin = '40px auto';
+        container.style.padding = '0 20px';
+        mainContent.appendChild(container);
+    }
 
     // 1. Extraction blindée : Somme de l'XP de TOUS les exercices
     const totalXpFromExercises = supabaseExercises.reduce((sum, ex) => {
