@@ -46,6 +46,29 @@ const getLevelData = (xp) => {
     return { level, currentLevelXp, progressPercent };
 };
 
+/**
+ * Vérifie si l'ajout d'XP déclenche un passage de niveau et lance l'animation
+ * @param {number} additionalXp - Les XP gagnés à cette étape
+ */
+const checkAndTriggerLevelUp = (additionalXp) => {
+    if (additionalXp <= 0) return;
+
+    const stats = getUserStats();
+    
+    // 1. Calcul du niveau AVANT l'ajout
+    const oldLevel = Math.floor(stats.xp / GAMIFICATION_CONFIG.XP_PER_LEVEL) + 1;
+    
+    // 2. Mise à jour et sauvegarde
+    stats.xp += additionalXp;
+    saveUserStats(stats);
+
+    // 3. Calcul du niveau APRÈS l'ajout
+    const newLevel = Math.floor(stats.xp / GAMIFICATION_CONFIG.XP_PER_LEVEL) + 1;
+    if (newLevel > oldLevel) {
+        triggerLevelUpEffects(newLevel);
+    }
+};
+
 const processAIResponse = (responseText) => {
     const completionRegex = /\{[\s\S]*?"status"\s*:\s*"COMPLETED"[\s\S]*?\}/;
     const match = responseText.match(completionRegex);
@@ -55,10 +78,10 @@ const processAIResponse = (responseText) => {
             const data = JSON.parse(match[0]);
             const stats = getUserStats();
 
-            // Calcul du niveau avant ajout d'XP
+            // Mise à jour des stats (la logique de level up est gérée par checkAndTriggerLevelUp ou ici)
             const oldLevel = Math.floor(stats.xp / GAMIFICATION_CONFIG.XP_PER_LEVEL) + 1;
-
             stats.xp += (data.xp_awarded || 0);
+
             if (data.streak_increment) stats.streak += 1;
             if (data.badge_unlocked && !stats.badges.includes(data.badge_unlocked)) {
                 stats.badges.push(data.badge_unlocked);
@@ -93,7 +116,7 @@ const processAIResponse = (responseText) => {
  * Moteur d'effets visuels "Level Up" (Confettis & Banner)
  */
 const triggerLevelUpEffects = (newLevel) => {
-    const title = SOCRATIC_TITLES[Math.min(newLevel - 1, SOCRATIC_TITLES.length - 1)];
+    const title = SOCRATIC_TITLES[Math.min(newLevel - 1, SOCRATIC_TITLES.length - 1)] || "Sage de la Cité";
     
     // 1. Injection des styles d'animation
     if (!document.getElementById('maieutik-levelup-styles')) {
@@ -119,40 +142,40 @@ const triggerLevelUpEffects = (newLevel) => {
     banner.style.cssText = `
         position: fixed; top: 50%; left: 50%; z-index: 10000;
         text-align: center; pointer-events: none; width: 100%;
-        font-family: 'Inter', sans-serif; animation: banner-pop 3.5s ease-out forwards;
+        font-family: 'Inter', system-ui, sans-serif; animation: banner-pop 3.5s ease-out forwards;
     `;
     banner.innerHTML = `
-        <div style="background: white; display: inline-block; padding: 40px 60px; border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25); border: 2px solid #e0e7ff;">
-            <div style="font-size: 60px; margin-bottom: 10px;">🏆</div>
-            <h2 style="margin: 0; color: #1e293b; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em;">Félicitations !</h2>
-            <p style="margin: 5px 0; color: #4f46e5; font-size: 28px; font-weight: 900;">Niveau ${newLevel}</p>
-            <p style="margin: 0; color: #64748b; font-size: 16px; font-weight: 500;">Vous êtes maintenant un <b style="color: #0f172a;">${title}</b></p>
+        <div style="background: white; display: inline-block; padding: 35px 50px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.35); border: 2px solid #e0e7ff;">
+            <div style="font-size: 55px; margin-bottom: 8px;">🏆</div>
+            <h2 style="margin: 0; color: #1e293b; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em;">Progression Absolue</h2>
+            <p style="margin: 5px 0; color: #4f46e5; font-size: 26px; font-weight: 900;">Niveau Supérieur ${newLevel}</p>
+            <p style="margin: 0; color: #64748b; font-size: 15px; font-weight: 500;">Vous êtes maintenant un <b style="color: #0f172a;">${title}</b></p>
         </div>
     `;
     document.body.appendChild(banner);
-    setTimeout(() => banner.remove(), 4000);
+    setTimeout(() => banner.remove(), 3600);
 
     // 3. Explosion de confettis (Moteur de particules JS)
     const colors = ['#6366f1', '#818cf8', '#fbbf24', '#f472b6', '#34d399', '#60a5fa'];
-    const count = 120;
+    const particleCount = 100;
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < particleCount; i++) {
         const confetti = document.createElement('div');
         const size = Math.random() * 8 + 6 + 'px';
         const color = colors[Math.floor(Math.random() * colors.length)];
         const isCircle = Math.random() > 0.5;
 
         // Propriétés de trajectoire aléatoires
-        const translateX = (Math.random() - 0.5) * 400 + 'px';
+        const translateX = (Math.random() - 0.5) * 500 + 'px';
         const rotateEnd = (Math.random() * 720 - 360) + 'deg';
-        const duration = Math.random() * 2 + 2 + 's';
+        const duration = Math.random() * 1.5 + 2 + 's';
         const delay = Math.random() * 0.2 + 's';
 
         confetti.style.cssText = `
             position: fixed; top: 50%; left: 50%;
             width: ${size}; height: ${size};
             background-color: ${color};
-            border-radius: ${isCircle ? '50%' : '2px'};
+            border-radius: ${isCircle ? '50%' : '3px'};
             z-index: 9999; pointer-events: none;
             --translateX: ${translateX};
             --rotateEnd: ${rotateEnd};
@@ -160,7 +183,7 @@ const triggerLevelUpEffects = (newLevel) => {
         `;
 
         document.body.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 4000);
+        setTimeout(() => confetti.remove(), 3800);
     }
 };
 
@@ -361,4 +384,4 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
 /**
  * 4. Exportation globale (Écouteurs supprimés car orchestrés par main.js)
  */
-window.MaieutikGamification = { processAIResponse, renderDashboard, getStats: getUserStats };
+window.MaieutikGamification = { processAIResponse, renderDashboard, getStats: getUserStats, checkAndTriggerLevelUp };
