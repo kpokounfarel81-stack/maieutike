@@ -316,11 +316,8 @@ class Router {
         await exerciseManager.loadUserExercises();
         const exercises = exerciseManager.getExercises() || [];
 
-        // Charger le profil frais depuis Supabase pour synchroniser l'XP et le Niveau
-        const profile = await window.authManager.loadProfile();
-
         if (window.MaieutikGamification) {
-            window.MaieutikGamification.renderDashboard(exercises, profile);
+            window.MaieutikGamification.renderDashboard(exercises);
         } else {
             console.error("[Main] Le module MaieutikGamification est introuvable au moment du rendu.");
         }
@@ -427,20 +424,12 @@ class Router {
 
                 UIManager.showNotification('Reponse IA prete!', 'success');
 
-                // AUTOMATISATION GAMIFICATION : Liaison persistante avec Supabase
-                const gameData = result.gamification;
-                if (gameData && gameData.status === "COMPLETED") {
-                    const userId = window.authManager.getUserId();
-                    if (userId && window.supabaseClient) {
-                        // 1. Mise à jour des colonnes xp, level, streak dans Supabase
-                        await window.supabaseClient.updateUserStats(userId, {
-                            xpAwarded: gameData.xp_awarded,
-                            incrementStreak: gameData.streak_increment
-                        });
-                        // 2. Clear du cache local pour forcer un rechargement au prochain dashboard
-                        window.authManager.profile = null;
-                    }
-                    this.showCompletionToast(gameData);
+                // Mise à jour de l'historique académique
+                if (window.MaieutikGamification && result.gamification) {
+                    window.MaieutikGamification.updateHistory({
+                        status: result.gamification.status,
+                        title: problemStatement
+                    });
                 }
 
                 exerciseManager.clearCurrentExercise();

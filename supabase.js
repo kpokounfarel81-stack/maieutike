@@ -237,32 +237,6 @@ class SupabaseClient {
         return data || null;
     }
 
-    async updateUserStats(userId, { xpAwarded, incrementStreak }) {
-        await this.ensureReady();
-        
-        // 1. Récupérer les stats actuelles pour éviter les erreurs NaN
-        const profile = await this.getUserProfile(userId);
-        if (!profile) return;
-
-        const currentXP = Number(profile.xp || 0);
-        const newXP = currentXP + Number(xpAwarded || 0);
-        const newLevel = Math.floor(newXP / 500) + 1; // Logique simple: 500 XP par niveau
-        
-        const updateData = {
-            xp: newXP,
-            level: newLevel,
-            last_activity_at: new Date().toISOString()
-        };
-
-        if (incrementStreak) {
-            updateData.streak_days = (profile.streak_days || 0) + 1;
-        }
-
-        const { error } = await this.supabase.from('profiles').update(updateData).eq('id', profile.id);
-        if (error) throw error;
-        return updateData;
-    }
-
     async saveExercise(userId, problemStatement, reasoning, solution) {
         await this.ensureReady();
 

@@ -58,45 +58,6 @@ class UIManager {
     }
 
     /**
-     * Affiche une notification d'XP stylisée (Micro-XP)
-     */
-    static showXPToast(amount, message) {
-        const isPositive = amount >= 0;
-        const toast = document.createElement('div');
-        
-        // Styles et thèmes
-        const themeClass = isPositive 
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-emerald-100' 
-            : 'bg-rose-50 border-rose-200 text-rose-700 shadow-rose-100';
-        const icon = isPositive ? '✨' : '🔍';
-        const prefix = isPositive ? '+' : '';
-
-        toast.className = `fixed top-6 right-6 flex items-center gap-3 px-5 py-3 rounded-2xl border ${themeClass} shadow-xl z-[9999] transform transition-all duration-500 translate-x-full opacity-0`;
-        toast.style.fontFamily = "'Inter', sans-serif";
-        
-        toast.innerHTML = `
-            <span class="text-xl">${icon}</span>
-            <div class="flex flex-col">
-                <span class="text-xs font-black uppercase tracking-widest opacity-60">${message}</span>
-                <span class="text-lg font-black">${prefix}${amount} XP</span>
-            </div>
-        `;
-
-        document.body.appendChild(toast);
-
-        // Animation d'entrée
-        requestAnimationFrame(() => {
-            toast.classList.remove('translate-x-full', 'opacity-0');
-        });
-
-        // Suppression automatique
-        setTimeout(() => {
-            toast.classList.add('translate-x-full', 'opacity-0');
-            setTimeout(() => toast.remove(), 500);
-        }, 3500);
-    }
-
-    /**
      * Formater une date
      */
     static formatDate(dateString) {
