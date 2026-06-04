@@ -11,6 +11,16 @@ const GAMIFICATION_CONFIG = {
     }
 };
 
+const SOCRATIC_TITLES = [
+    "Sophiste Égaré",     // Level 1
+    "Apprenti Socratique", // Level 2
+    "Chercheur de Vérité", // Level 3
+    "Disciple de l'Académie", // Level 4
+    "Maître du Logos",    // Level 5
+    "Philosophe Éclairé",  // Level 6
+    "Sage de la Cité"      // Level 7+
+];
+
 const getUserStats = () => {
     const xp = parseInt(localStorage.getItem(GAMIFICATION_CONFIG.STORAGE_KEYS.XP)) || 0;
     const streak = parseInt(localStorage.getItem(GAMIFICATION_CONFIG.STORAGE_KEYS.STREAK)) || 0;
@@ -45,6 +55,9 @@ const processAIResponse = (responseText) => {
             const data = JSON.parse(match[0]);
             const stats = getUserStats();
 
+            // Calcul du niveau avant ajout d'XP
+            const oldLevel = Math.floor(stats.xp / GAMIFICATION_CONFIG.XP_PER_LEVEL) + 1;
+
             stats.xp += (data.xp_awarded || 0);
             if (data.streak_increment) stats.streak += 1;
             if (data.badge_unlocked && !stats.badges.includes(data.badge_unlocked)) {
@@ -61,12 +74,94 @@ const processAIResponse = (responseText) => {
             localStorage.setItem(GAMIFICATION_CONFIG.STORAGE_KEYS.HISTORY, JSON.stringify(history.slice(0, 50)));
 
             saveUserStats(stats);
+
+            // Détection du Level Up
+            const newLevel = Math.floor(stats.xp / GAMIFICATION_CONFIG.XP_PER_LEVEL) + 1;
+            if (newLevel > oldLevel) {
+                triggerLevelUpEffects(newLevel);
+            }
+
             return data;
         } catch (error) {
             console.error("[Maieutik-Gamification] Erreur JSON :", error);
         }
     }
     return null;
+};
+
+/**
+ * Moteur d'effets visuels "Level Up" (Confettis & Banner)
+ */
+const triggerLevelUpEffects = (newLevel) => {
+    const title = SOCRATIC_TITLES[Math.min(newLevel - 1, SOCRATIC_TITLES.length - 1)];
+    
+    // 1. Injection des styles d'animation
+    if (!document.getElementById('maieutik-levelup-styles')) {
+        const style = document.createElement('style');
+        style.id = 'maieutik-levelup-styles';
+        style.innerHTML = `
+            @keyframes confetti-fall {
+                0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+                100% { transform: translate(var(--translateX), 100vh) rotate(var(--rotateEnd)); opacity: 0; }
+            }
+            @keyframes banner-pop {
+                0% { transform: translate(-50%, -40%) scale(0.8); opacity: 0; }
+                15% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                85% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                100% { transform: translate(-50%, -60%) scale(0.9); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 2. Création de la bannière de félicitations
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+        position: fixed; top: 50%; left: 50%; z-index: 10000;
+        text-align: center; pointer-events: none; width: 100%;
+        font-family: 'Inter', sans-serif; animation: banner-pop 3.5s ease-out forwards;
+    `;
+    banner.innerHTML = `
+        <div style="background: white; display: inline-block; padding: 40px 60px; border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25); border: 2px solid #e0e7ff;">
+            <div style="font-size: 60px; margin-bottom: 10px;">🏆</div>
+            <h2 style="margin: 0; color: #1e293b; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em;">Félicitations !</h2>
+            <p style="margin: 5px 0; color: #4f46e5; font-size: 28px; font-weight: 900;">Niveau ${newLevel}</p>
+            <p style="margin: 0; color: #64748b; font-size: 16px; font-weight: 500;">Vous êtes maintenant un <b style="color: #0f172a;">${title}</b></p>
+        </div>
+    `;
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 4000);
+
+    // 3. Explosion de confettis (Moteur de particules JS)
+    const colors = ['#6366f1', '#818cf8', '#fbbf24', '#f472b6', '#34d399', '#60a5fa'];
+    const count = 120;
+
+    for (let i = 0; i < count; i++) {
+        const confetti = document.createElement('div');
+        const size = Math.random() * 8 + 6 + 'px';
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const isCircle = Math.random() > 0.5;
+
+        // Propriétés de trajectoire aléatoires
+        const translateX = (Math.random() - 0.5) * 400 + 'px';
+        const rotateEnd = (Math.random() * 720 - 360) + 'deg';
+        const duration = Math.random() * 2 + 2 + 's';
+        const delay = Math.random() * 0.2 + 's';
+
+        confetti.style.cssText = `
+            position: fixed; top: 50%; left: 50%;
+            width: ${size}; height: ${size};
+            background-color: ${color};
+            border-radius: ${isCircle ? '50%' : '2px'};
+            z-index: 9999; pointer-events: none;
+            --translateX: ${translateX};
+            --rotateEnd: ${rotateEnd};
+            animation: confetti-fall ${duration} ${delay} cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        `;
+
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 4000);
+    }
 };
 
 /**
@@ -180,6 +275,7 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
     // 2. Calcul local fiable
     const xpPerLevel = 500;
     const displayLevel = Math.floor(finalXp / xpPerLevel) + 1;
+    const title = SOCRATIC_TITLES[Math.min(displayLevel - 1, SOCRATIC_TITLES.length - 1)];
     let currentLevelXp = finalXp % xpPerLevel;
     let progressPercent = (currentLevelXp / xpPerLevel) * 100;
 
@@ -208,16 +304,20 @@ const renderDashboard = (supabaseExercises = [], userProfile = null) => {
             #dashboard-new-exercise-btn:active { transform: translateY(0); }
             .filter-btn:hover { background-color: #f1f5f9 !important; }
             .filter-btn[style*="background-color: rgb(15, 23, 42)"]:hover { background-color: #1e293b !important; }
+            
+            .xp-progress-inner {
+                transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
         </style>
 
         <!-- BLOC 1 : GAMIFICATION -->
         <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <div>
-                <h2 style="color: #6366f1; font-size: 12px; font-weight: 900; text-transform: uppercase; margin: 0;">Apprenti Socratique</h2>
+                <h2 style="color: #6366f1; font-size: 12px; font-weight: 900; text-transform: uppercase; margin: 0;">${title}</h2>
                 <p style="font-size: 30px; font-weight: 900; margin: 4px 0; color: #0f172a;">Niveau ${displayLevel}</p>
                 <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${xpDisplayText} (Niveau ${displayLevel})</div>
                 <div style="width: 240px; background: #f1f5f9; height: 10px; border-radius: 10px; overflow: hidden; margin-top: 8px;">
-                    <div style="background: #6366f1; width: ${progressPercent}%; height: 100%; transition: width 1s ease-out;"></div>
+                    <div class="xp-progress-inner" style="background: linear-gradient(90deg, #6366f1, #818cf8); width: ${progressPercent}%; height: 100%;"></div>
                 </div>
             </div>
             <div style="font-size: 32px; width: 56px; height: 56px; background: #e0e7ff; border-radius: 12px; display: flex; align-items: center; justify-content: center;">🎓</div>
